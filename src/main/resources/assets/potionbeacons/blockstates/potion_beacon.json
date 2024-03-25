@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "half=lower": { "model": "minecraft:block/beacon"},
+    "half=upper": { "model": "potionbeacons:block/potion_beacon_upper"}
+  }
+}
