@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "potionbeacons",
+	"version": "${version}",
+	"name": "Potion Beacons",
+	"description": "Put your Potions in a Beacon to share effects with friends or foes",
+	"authors": [
+		"Uiuiuiui0815"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/potionbeacons/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.uiuiuiui0815.potionbeacons.PotionBeacons"
+		],
+		"client": [
+			"net.uiuiuiui0815.potionbeacons.PotionBeaconsClient"
+		],
+		"fabric-datagen": [
+			"net.uiuiuiui0815.potionbeacons.PotionBeaconsDataGenerator"
+		]
+	},
+	"mixins": [
+		"potionbeacons.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.7",
+		"minecraft": "~1.20.4",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
