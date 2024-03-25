@@ -4,6 +4,8 @@ import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.Items;
@@ -17,6 +19,11 @@ public class PotionBeacons implements ModInitializer {
 	public static final String MOD_ID = "potionbeacons";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+	public static final BlockEntityType<PotionBeaconEntity> POTION_BEACON_ENTITY = Registry.register(
+			Registries.BLOCK_ENTITY_TYPE,
+			new Identifier("potionbeacons", "potion_beacon_entity"),
+			FabricBlockEntityTypeBuilder.create(PotionBeaconEntity::new, PotionBeaconBlock.POTION_BEACON_BLOCK).build()
+	);
 	@Override
 	public void onInitialize() {
 		Registry.register(Registries.BLOCK, new Identifier("potionbeacons", "potion_beacon"), PotionBeaconBlock.POTION_BEACON_BLOCK);
