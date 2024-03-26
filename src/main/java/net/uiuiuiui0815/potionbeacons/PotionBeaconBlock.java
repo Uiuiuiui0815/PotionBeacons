@@ -1,8 +1,11 @@
 package net.uiuiuiui0815.potionbeacons;
 
+import com.mojang.serialization.MapCodec;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -12,6 +15,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -22,7 +26,11 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import org.jetbrains.annotations.Nullable;
 
-public class PotionBeaconBlock extends Block implements BlockEntityProvider {
+public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider,Stainable {
+    public static final MapCodec<PotionBeaconBlock> CODEC = PotionBeaconBlock.createCodec(PotionBeaconBlock::new);
+    public MapCodec<PotionBeaconBlock> getCodec(){
+        return CODEC;
+    }
     public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
     public static final PotionBeaconBlock POTION_BEACON_BLOCK = new PotionBeaconBlock(FabricBlockSettings.copyOf(Blocks.BEACON).nonOpaque());
 
@@ -30,6 +38,8 @@ public class PotionBeaconBlock extends Block implements BlockEntityProvider {
         super(settings);
         setDefaultState(getDefaultState().with(HALF, DoubleBlockHalf.LOWER));
     }
+
+
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, ShapeContext context) {
         DoubleBlockHalf half = state.get(HALF);
@@ -92,5 +102,20 @@ public class PotionBeaconBlock extends Block implements BlockEntityProvider {
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PotionBeaconEntity(pos, state);
+    }
+    @Override
+    public BlockRenderType getRenderType(BlockState state){
+        return BlockRenderType.MODEL;
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        return PotionBeaconBlock.validateTicker(type, PotionBeacons.POTION_BEACON_ENTITY, (world1, pos, state1, blockEntity) -> PotionBeaconEntity.tick(world1, pos, state1, blockEntity));
+    }
+
+    @Override
+    public DyeColor getColor() {
+        return DyeColor.WHITE;
     }
 }
