@@ -8,7 +8,9 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.Stainable;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -18,6 +20,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 import org.apache.commons.compress.utils.Lists;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,11 +30,13 @@ public class PotionBeaconEntity extends BlockEntity {
     private List<BeamSegment> field_19178 = Lists.newArrayList();
     int level;
     private int minY;
+    @Nullable List<PotionBeaconEffect> effects;
 
     public PotionBeaconEntity(BlockPos pos, BlockState state) {
         super(PotionBeacons.POTION_BEACON_ENTITY, pos, state);
     }
-    public static void tick(World world, BlockPos pos, BlockState state, PotionBeaconEntity blockEntity){
+
+    public static void tick(World world, BlockPos pos, PotionBeaconEntity blockEntity){
         int m;
         BlockPos blockPos;
         int i = pos.getX();
@@ -41,7 +46,7 @@ public class PotionBeaconEntity extends BlockEntity {
             blockPos = pos;
             blockEntity.field_19178 = Lists.newArrayList();
             blockEntity.minY = blockPos.getY() - 1;
-        }else {
+        } else {
             blockPos = new BlockPos(i, blockEntity.minY + 1, k);
         }
         BeamSegment beamSegment = blockEntity.field_19178.isEmpty() ? null : blockEntity.field_19178.get(blockEntity.field_19178.size() - 1);
@@ -55,7 +60,7 @@ public class PotionBeaconEntity extends BlockEntity {
                         blockState = world.getBlockState(blockPos);
                         Block block = blockState.getBlock();
                         if (!(block instanceof Stainable)) break block16;
-                        fs = ((Stainable) ((Object) block)).getColor().getColorComponents();
+                        fs = ((Stainable) block).getColor().getColorComponents();
                         if (blockEntity.field_19178.size() > 1) break block17;
                         beamSegment = new BeamSegment(fs);
                         blockEntity.field_19178.add(beamSegment);
@@ -64,7 +69,7 @@ public class PotionBeaconEntity extends BlockEntity {
                     if (beamSegment == null) break block18;
                     if (Arrays.equals(fs, beamSegment.color)) {
                         beamSegment.increaseHeight();
-                    }else {
+                    } else {
                         beamSegment = new BeamSegment(new float[]{(beamSegment.color[0] + fs[0]) / 2.0f, (beamSegment.color[1] + fs[1]) / 2.0f, (beamSegment.color[2] + fs[2]) / 2.0f});
                         blockEntity.field_19178.add(beamSegment);
                     }
@@ -87,6 +92,7 @@ public class PotionBeaconEntity extends BlockEntity {
                 blockEntity.level = PotionBeaconEntity.updateLevel(world, i, j, k);
             }
             if (blockEntity.level > 0 && !blockEntity.beamSegments.isEmpty()) {
+                PotionBeaconEntity.applyPlayerEffects(world, pos, blockEntity.level, blockEntity.effects);
                 BeaconBlockEntity.playSound(world, pos, SoundEvents.BLOCK_BEACON_AMBIENT);
             }
         }
@@ -95,14 +101,13 @@ public class PotionBeaconEntity extends BlockEntity {
             boolean bl = m > 0;
             blockEntity.beamSegments = blockEntity.field_19178;
             if (!world.isClient) {
-                boolean bl2;
-                boolean bl3 = bl2 = blockEntity.level > 0;
+                boolean bl2 = blockEntity.level > 0;
                 if (!bl && bl2) {
                     BeaconBlockEntity.playSound(world, pos, SoundEvents.BLOCK_BEACON_ACTIVATE);
                     for (ServerPlayerEntity serverPlayerEntity : world.getNonSpectatingEntities(ServerPlayerEntity.class, new Box(i, j, k, i, j - 4, k).expand(10, 5, 10))) {
                         Criteria.CONSTRUCT_BEACON.trigger(serverPlayerEntity, blockEntity.level);
                     }
-                }else if (bl && !bl2){
+                } else if (bl && !bl2){
                     BeaconBlockEntity.playSound(world, pos, SoundEvents.BLOCK_BEACON_DEACTIVATE);
                 }
             }
@@ -134,6 +139,29 @@ public class PotionBeaconEntity extends BlockEntity {
         super.markRemoved();
     }
 
+    public void addEffect(PotionBeaconEffect effect){
+        if (effects != null) {
+            effects.add(effect);
+        }
+    }
+
+    private static void applyPlayerEffects(World world, BlockPos pos, int beaconLevel, @Nullable List<PotionBeaconEffect> effects){
+        if (world.isClient || effects == null) {
+            return;
+        }
+        double d = 4 * 10 +10;
+        Box box = new Box(pos).expand(d).stretch(0.0, world.getHeight(), 0.0);
+        List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
+        if (beaconLevel >= 4) {
+            for (PlayerEntity playerEntity : list) {
+                for (PotionBeaconEffect effect : effects){
+                    playerEntity.addStatusEffect(effect.createStatusEffectInstance((9 + 4 * 2) * 20));
+                }
+            }
+        }
+
+    }
+
     public List<BeamSegment> getBeamSegments() {
         return this.level == 0 ? ImmutableList.of() : this.beamSegments;
     }
@@ -150,11 +178,17 @@ public class PotionBeaconEntity extends BlockEntity {
     @Override
     public void readNbt(NbtCompound nbt){
         super.readNbt(nbt);
+        this.effects = (List<PotionBeaconEffect>) nbt.get("Effect");
     }
     @Override
     protected void writeNbt(NbtCompound nbt){
         super.writeNbt(nbt);
         nbt.putInt("Levels", this.level);
+        if (effects != null) {
+            for (PotionBeaconEffect statusEffect : effects) {
+                nbt.put("Effects", (NbtElement) statusEffect);
+            }
+        }
     }
 
     @Override
