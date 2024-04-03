@@ -8,12 +8,15 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
@@ -32,6 +35,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider,Stainable {
@@ -117,7 +121,10 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     @Nullable
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        if (state.get(HALF) == DoubleBlockHalf.LOWER) {
             return new PotionBeaconEntity(pos, state);
+        }
+        return null;
     }
 
     @Override
@@ -141,10 +148,18 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         if (player.getStackInHand(hand).isOf(Items.SPLASH_POTION) || player.getStackInHand(hand).isOf(Items.POTION) || player.getStackInHand(hand).isOf(Items.LINGERING_POTION)) {
             BlockEntity blockEntity;
             List<StatusEffectInstance> list = PotionUtil.getPotionEffects(player.getStackInHand(hand));
-            if (state.equals(DoubleBlockHalf.LOWER) && (blockEntity = world.getBlockEntity(pos)) instanceof PotionBeaconEntity) {
-                for (StatusEffectInstance instance : list) {
-                    ((PotionBeaconEntity) blockEntity).addEffect(new PotionBeaconEffect(instance.getAmplifier(), instance.getEffectType()));
+            if (state.get(HALF) == DoubleBlockHalf.LOWER && (blockEntity = world.getBlockEntity(pos)) instanceof PotionBeaconEntity) {
+                List<StatusEffect> effectList = new ArrayList<>();
+                List<Integer> amplifierList = new ArrayList<>();
+                for (StatusEffectInstance effectInstance : list){
+                    if (effectInstance.getEffectType().isInstant()){
+                        return ActionResult.PASS;
+                    }
+                    effectList.add(effectInstance.getEffectType());
+                    amplifierList.add(effectInstance.getAmplifier());
                 }
+                ((PotionBeaconEntity) blockEntity).addEffects(effectList, amplifierList);
+                player.getStackInHand(hand).setCount(0);
                 return ActionResult.SUCCESS;
             }
         }
