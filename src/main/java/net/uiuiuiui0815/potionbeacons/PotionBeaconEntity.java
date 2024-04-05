@@ -19,19 +19,18 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 import org.apache.commons.compress.utils.Lists;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class PotionBeaconEntity extends BlockEntity {
     List<BeamSegment> beamSegments = Lists.newArrayList();
@@ -40,6 +39,7 @@ public class PotionBeaconEntity extends BlockEntity {
     private int minY;
     List<StatusEffect> effects;
     List<Integer> amplifiers;
+    static int charges;
 
     public PotionBeaconEntity(BlockPos pos, BlockState state) {
         super(PotionBeacons.POTION_BEACON_ENTITY, pos, state);
@@ -156,16 +156,19 @@ public class PotionBeaconEntity extends BlockEntity {
         this.amplifiers = new ArrayList<>();
         effects.addAll(effectList);
         this.amplifiers.addAll(amplifiers);
+        charges = 10;
         this.markDirty();
     }
 
     private static void applyPlayerEffects(World world, BlockPos pos, List<StatusEffect> effects, List<Integer> amplifiers, int level){
-        if (level < 4 || world.isClient) {
+        if (charges==0 || level < 4 || world.isClient) {
             return;
         }
         Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
         for (PlayerEntity playerEntity : list) {
+            charges--;
+            playerEntity.sendMessage(Text.of(String.valueOf(charges)));
             for (int i=0; i < effects.size(); i++){
                 playerEntity.addStatusEffect(new StatusEffectInstance(effects.get(i), 340, amplifiers.get(i), true, true));
             }
