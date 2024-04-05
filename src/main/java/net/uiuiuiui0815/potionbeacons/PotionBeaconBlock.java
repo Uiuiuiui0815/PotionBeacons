@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider,Stainable {
+public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider, Stainable {
     public static final MapCodec<PotionBeaconBlock> CODEC = PotionBeaconBlock.createCodec(PotionBeaconBlock::new);
 
     public MapCodec<PotionBeaconBlock> getCodec() {
@@ -137,11 +137,6 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     }
 
     @Override
-    public DyeColor getColor() {
-        return DyeColor.WHITE;
-    }
-
-    @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (player.getStackInHand(hand).isOf(Items.SPLASH_POTION) || player.getStackInHand(hand).isOf(Items.POTION) || player.getStackInHand(hand).isOf(Items.LINGERING_POTION)) {
             BlockEntity blockEntity;
@@ -162,5 +157,10 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
             }
         }
         return ActionResult.PASS;
+    }
+
+    @Override
+    public DyeColor getColor() {
+        return DyeColor.WHITE;
     }
 }
