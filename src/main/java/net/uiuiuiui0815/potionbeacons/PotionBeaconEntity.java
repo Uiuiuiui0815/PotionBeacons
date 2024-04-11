@@ -39,7 +39,7 @@ public class PotionBeaconEntity extends BlockEntity {
     private int minY;
     List<StatusEffect> effects;
     List<Integer> amplifiers;
-    static int charges;
+    int charges;
 
     public PotionBeaconEntity(BlockPos pos, BlockState state) {
         super(PotionBeacons.POTION_BEACON_ENTITY, pos, state);
@@ -103,8 +103,11 @@ public class PotionBeaconEntity extends BlockEntity {
                 blockEntity.level = PotionBeaconEntity.updateLevel(world, i, j, k);
             }
             if (blockEntity.level > 0 && !blockEntity.beamSegments.isEmpty()) {
-                PotionBeaconEntity.applyPlayerEffects(world, pos, blockEntity.effects, blockEntity.amplifiers, blockEntity.level);
+                PotionBeaconEntity.applyPlayerEffects(world, pos, blockEntity.effects, blockEntity.amplifiers, blockEntity.level, blockEntity.charges);
                 BeaconBlockEntity.playSound(world, pos, SoundEvents.BLOCK_BEACON_AMBIENT);
+            }
+            if (blockEntity.level >= 4 && !blockEntity.beamSegments.isEmpty()) {
+                blockEntity.charges = PotionBeaconEntity.updateCharges(world, pos, blockEntity.charges);
             }
         }
         if (blockEntity.minY >= l) {
@@ -156,23 +159,28 @@ public class PotionBeaconEntity extends BlockEntity {
         this.amplifiers = new ArrayList<>();
         effects.addAll(effectList);
         this.amplifiers.addAll(amplifiers);
-        charges = 10;
+        charges = 1500;
         this.markDirty();
     }
 
-    private static void applyPlayerEffects(World world, BlockPos pos, List<StatusEffect> effects, List<Integer> amplifiers, int level){
-        if (charges==0 || level < 4 || world.isClient) {
+    private static void applyPlayerEffects(World world, BlockPos pos, List<StatusEffect> effects, List<Integer> amplifiers, int level, int charges){
+        if (charges <=0 || level < 4 || world.isClient) {
             return;
         }
         Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
         for (PlayerEntity playerEntity : list) {
-            charges--;
             playerEntity.sendMessage(Text.of(String.valueOf(charges)));
             for (int i=0; i < effects.size(); i++){
                 playerEntity.addStatusEffect(new StatusEffectInstance(effects.get(i), 340, amplifiers.get(i), true, true));
             }
         }
+    }
+
+    private static int updateCharges(World world, BlockPos pos, int charges){
+        Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
+        List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
+        return charges - list.size();
     }
 
     public List<BeamSegment> getBeamSegments() {
@@ -191,6 +199,7 @@ public class PotionBeaconEntity extends BlockEntity {
     @Override
     public void readNbt(NbtCompound nbt){
         super.readNbt(nbt);
+        charges = nbt.getInt("Charges");
         NbtList nbtList = nbt.getList("Effects", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < nbtList.size(); i++){
             NbtCompound compound = nbtList.getCompound(i);
@@ -203,7 +212,8 @@ public class PotionBeaconEntity extends BlockEntity {
     }
     @Override
     protected void writeNbt(NbtCompound nbt){
-        nbt.putInt("Levels", this.level);
+        nbt.putInt("Levels", level);
+        nbt.putInt("Charges", charges);
         NbtList nbtList = new NbtList();
         for (int i = 0; i < effects.size(); i++){
             String s = (Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effects.get(i)))).toString();
