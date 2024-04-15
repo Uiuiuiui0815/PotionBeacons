@@ -14,6 +14,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.potion.PotionUtil;
@@ -140,21 +141,20 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (player.getStackInHand(hand).isOf(Items.SPLASH_POTION) || player.getStackInHand(hand).isOf(Items.POTION) || player.getStackInHand(hand).isOf(Items.LINGERING_POTION)) {
+        ItemStack handStack = player.getStackInHand(hand);
+        if (handStack.isOf(Items.LINGERING_POTION)) {
             BlockEntity blockEntity;
-            List<StatusEffectInstance> list = PotionUtil.getPotionEffects(player.getStackInHand(hand));
+            List<StatusEffectInstance> list = PotionUtil.getPotionEffects(handStack);
             if (state.get(HALF) == DoubleBlockHalf.LOWER && (blockEntity = world.getBlockEntity(pos)) instanceof PotionBeaconEntity) {
                 List<StatusEffect> effectList = new ArrayList<>();
                 List<Integer> amplifierList = new ArrayList<>();
                 for (StatusEffectInstance effectInstance : list){
-                    if (effectInstance.getEffectType().isInstant()){
-                        return ActionResult.PASS;
-                    }
+                    if (effectInstance.getEffectType().isInstant()) return ActionResult.PASS;
                     effectList.add(effectInstance.getEffectType());
                     amplifierList.add(effectInstance.getAmplifier());
                 }
                 ((PotionBeaconEntity) blockEntity).addEffects(effectList, amplifierList);
-                player.getStackInHand(hand).setCount(0);
+                player.setStackInHand(hand, ItemUsage.exchangeStack(handStack, player, new ItemStack(Items.GLASS_BOTTLE)));
                 return ActionResult.SUCCESS;
             }
         }

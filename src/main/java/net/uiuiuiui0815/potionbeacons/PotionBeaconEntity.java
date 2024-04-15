@@ -180,6 +180,8 @@ public class PotionBeaconEntity extends BlockEntity {
     private static int updateCharges(World world, BlockPos pos, int charges){
         Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
+        BlockEntity blockEntity = world.getBlockEntity(pos);
+        blockEntity.markDirty();
         return charges - list.size();
     }
 
