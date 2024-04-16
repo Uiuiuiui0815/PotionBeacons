@@ -154,7 +154,9 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
                     amplifierList.add(effectInstance.getAmplifier());
                 }
                 ((PotionBeaconEntity) blockEntity).addEffects(effectList, amplifierList);
-                player.setStackInHand(hand, ItemUsage.exchangeStack(handStack, player, new ItemStack(Items.GLASS_BOTTLE)));
+                if (!player.isCreative()) {
+                    player.setStackInHand(hand, ItemUsage.exchangeStack(handStack, player, new ItemStack(Items.GLASS_BOTTLE)));
+                }
                 return ActionResult.SUCCESS;
             }
         }
