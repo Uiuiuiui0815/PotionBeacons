@@ -155,11 +155,18 @@ public class PotionBeaconEntity extends BlockEntity {
     }
 
     public void addEffects(List<StatusEffect> effectList, List<Integer> amplifiers){
-        effects = new ArrayList<>();
-        this.amplifiers = new ArrayList<>();
-        effects.addAll(effectList);
-        this.amplifiers.addAll(amplifiers);
-        charges = 1500;
+        if (!effects.equals(effectList) || effects.isEmpty()) {
+            effects = new ArrayList<>();
+            effects.addAll(effectList);
+        }
+        if (!this.amplifiers.equals(amplifiers) || amplifiers.isEmpty()) {
+            this.amplifiers = new ArrayList<>();
+            this.amplifiers.addAll(amplifiers);
+        }
+        if (charges < 0){
+            charges = 0;
+        }
+        charges += 1500;
         this.markDirty();
     }
 
