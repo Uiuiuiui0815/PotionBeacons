@@ -166,7 +166,11 @@ public class PotionBeaconEntity extends BlockEntity {
         if (charges < 0){
             charges = 0;
         }
-        charges += 1500;
+        if (effects.equals(effectList) && this.amplifiers.equals(amplifiers)){
+            charges += 1500;
+        }else {
+            charges = 0;
+        }
         this.markDirty();
     }
 
@@ -177,7 +181,6 @@ public class PotionBeaconEntity extends BlockEntity {
         Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
         for (PlayerEntity playerEntity : list) {
-            playerEntity.sendMessage(Text.of(String.valueOf(charges)));
             for (int i=0; i < effects.size(); i++){
                 playerEntity.addStatusEffect(new StatusEffectInstance(effects.get(i), 340, amplifiers.get(i), true, true));
             }
@@ -213,27 +216,24 @@ public class PotionBeaconEntity extends BlockEntity {
         for (int i = 0; i < nbtList.size(); i++){
             NbtCompound compound = nbtList.getCompound(i);
             String s = compound.getString("Effect" + i);
-            StatusEffect statusEffect = Registries.STATUS_EFFECT.get(Identifier.tryParse(s));
+            String[] parts = s.split("_");
+            StatusEffect statusEffect = Registries.STATUS_EFFECT.get(Identifier.tryParse(parts[0]));
             effects.add(i, statusEffect);
+            amplifiers.add(Integer.parseInt(parts[1]));
         }
-        List<Integer> integerList = Arrays.stream(nbt.getIntArray("Amplifiers")).boxed().toList();
-        amplifiers.addAll(integerList);
     }
     @Override
     protected void writeNbt(NbtCompound nbt){
-        nbt.putInt("Levels", level);
+        nbt.putInt("Level", level);
         nbt.putInt("Charges", charges);
         NbtList nbtList = new NbtList();
         for (int i = 0; i < effects.size(); i++){
-            String s = (Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effects.get(i)))).toString();
-            if (s != null){
+            String s = Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effects.get(i)))+ "_" + amplifiers.get(i);
                 NbtCompound compound = new NbtCompound();
                 compound.putString("Effect" + i, s);
                 nbtList.add(compound);
-            }
         }
         nbt.put("Effects", nbtList);
-        nbt.putIntArray("Amplifiers", amplifiers);
         super.writeNbt(nbt);
     }
 
