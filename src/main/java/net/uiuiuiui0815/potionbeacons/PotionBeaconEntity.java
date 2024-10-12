@@ -65,6 +65,7 @@ public class PotionBeaconEntity extends BlockEntity {
                         Block block = blockState.getBlock();
                         if (!(block instanceof Stainable)) break block16;
                         fs = ((Stainable) block).getColor().getColorComponents();
+                        fs = new float[]{1.0f, 255.0f, 255.0f};
                         if (blockEntity.beamSegmentList.size() > 1) break block17;
                         beamSegment = new BeamSegment(fs);
                         blockEntity.beamSegmentList.add(beamSegment);
@@ -101,6 +102,7 @@ public class PotionBeaconEntity extends BlockEntity {
             }
             if (blockEntity.level >= 4 && !blockEntity.beamSegments.isEmpty()) {
                 blockEntity.charges = PotionBeaconEntity.updateCharges(world, pos, blockEntity.charges);
+                blockEntity.markDirty();
             }
         }
         if (blockEntity.minY >= l) {
@@ -166,8 +168,8 @@ public class PotionBeaconEntity extends BlockEntity {
         Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
         for (PlayerEntity playerEntity : list) {
-            for (int i=0; i < effects.size(); i++){
-                playerEntity.addStatusEffect(new StatusEffectInstance(effects.get(i).effect, 340, effects.get(i).amplifier, true, true));
+            for (PotionBeaconEffect effect : effects) {
+                playerEntity.addStatusEffect(new StatusEffectInstance(effect.effect, 340, effect.amplifier, true, true));
             }
         }
     }
@@ -175,8 +177,6 @@ public class PotionBeaconEntity extends BlockEntity {
     private static int updateCharges(World world, BlockPos pos, int charges){
         Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-        blockEntity.markDirty();
         return charges - list.size();
     }
 

@@ -172,7 +172,6 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (blockEntity == null ||
                 ((PotionBeaconEntity) blockEntity).effects.isEmpty() ||
-                ((PotionBeaconEntity) blockEntity).beamSegments.isEmpty() ||
                 ((PotionBeaconEntity) blockEntity).level < 4 ||
                 ((PotionBeaconEntity) blockEntity).charges <= 0) {
             return;
@@ -185,7 +184,7 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         double d = direction.getOffsetX() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetX() * 0.6;
         double e = direction.getOffsetY() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetY() * 0.6;
         double f = direction.getOffsetZ() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetZ() * 0.6;
-        world.addParticle(ParticleTypes.EFFECT, (double) pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + f, 0,0,0);
+        world.addParticle(ParticleTypes.ENTITY_EFFECT, (double) pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + f, 0,0,0);
     }
 
     @Override
