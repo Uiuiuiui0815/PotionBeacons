@@ -1,12 +1,13 @@
 package net.uiuiuiui0815.potionbeacons;
 
 import com.mojang.serialization.MapCodec;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,14 +16,13 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.potion.PotionUtil;
+import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -38,6 +38,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.minecraft.particle.ParticleTypes.ENTITY_EFFECT;
+
 public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider, Stainable {
     public static final MapCodec<PotionBeaconBlock> CODEC = PotionBeaconBlock.createCodec(PotionBeaconBlock::new);
 
@@ -46,7 +48,7 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     }
 
     public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
-    public static final PotionBeaconBlock POTION_BEACON_BLOCK = new PotionBeaconBlock(FabricBlockSettings.copyOf(Blocks.BEACON).nonOpaque());
+    public static final PotionBeaconBlock POTION_BEACON_BLOCK = new PotionBeaconBlock(AbstractBlock.Settings.copy(Blocks.BEACON).nonOpaque());
 
     public PotionBeaconBlock(Settings settings) {
         super(settings);
@@ -139,25 +141,25 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        ItemStack handStack = player.getStackInHand(hand);
-        if (handStack.isOf(Items.LINGERING_POTION)) {
-            List<StatusEffectInstance> potionEffects = PotionUtil.getPotionEffects(handStack);
+    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (stack.isOf(Items.LINGERING_POTION)) {
+            PotionContentsComponent potionContentsComponent = stack.getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT);
+            Iterable<StatusEffectInstance> potionEffects = potionContentsComponent.getEffects();
             if (state.get(HALF) == DoubleBlockHalf.LOWER && world.getBlockEntity(pos) instanceof PotionBeaconEntity beaconEntity) {
                 List<PotionBeaconEffect> effectList = new ArrayList<>();
                 for (StatusEffectInstance effectInstance : potionEffects){
-                    if (effectInstance.getEffectType().isInstant()) return ActionResult.PASS;
-                    PotionBeaconEffect effect = new PotionBeaconEffect(effectInstance.getEffectType(), effectInstance.getAmplifier());
+                    if (effectInstance.getEffectType().value().isInstant()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+                    PotionBeaconEffect effect = new PotionBeaconEffect(effectInstance.getEffectType().value(), effectInstance.getAmplifier());
                     effectList.add(effect);
                 }
                 beaconEntity.addEffects(effectList);
                 if (!player.isCreative()) {
-                    player.setStackInHand(hand, ItemUsage.exchangeStack(handStack, player, new ItemStack(Items.GLASS_BOTTLE)));
+                    player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
                 }
-                return ActionResult.SUCCESS;
+                return ItemActionResult.SUCCESS;
             }
         }
-        return ActionResult.PASS;
+        return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -184,7 +186,8 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         double d = direction.getOffsetX() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetX() * 0.6;
         double e = direction.getOffsetY() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetY() * 0.6;
         double f = direction.getOffsetZ() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetZ() * 0.6;
-        world.addParticle(ParticleTypes.ENTITY_EFFECT, (double) pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + f, 0,0,0);
+        EntityEffectParticleEffect effect = EntityEffectParticleEffect.create(ENTITY_EFFECT,1.0f,0.7f,0.2f);
+        world.addParticle(effect, (double) pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + f, 0,0,0);
     }
 
     @Override

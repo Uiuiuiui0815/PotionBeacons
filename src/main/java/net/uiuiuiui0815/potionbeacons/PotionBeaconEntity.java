@@ -8,23 +8,29 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.Stainable;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 import org.apache.commons.compress.utils.Lists;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class PotionBeaconEntity extends BlockEntity {
@@ -59,23 +65,22 @@ public class PotionBeaconEntity extends BlockEntity {
             block18: {
                 BlockState blockState;
                 block16: {
-                    float[] fs;
+                    int color;
                     block17: {
                         blockState = world.getBlockState(blockPos);
                         Block block = blockState.getBlock();
                         if (!(block instanceof Stainable)) break block16;
-                        fs = ((Stainable) block).getColor().getColorComponents();
-                        fs = new float[]{1.0f, 255.0f, 255.0f};
+                        color = 123;
                         if (blockEntity.beamSegmentList.size() > 1) break block17;
-                        beamSegment = new BeamSegment(fs);
+                        beamSegment = new BeamSegment(color);
                         blockEntity.beamSegmentList.add(beamSegment);
                         break block18;
                     }
                     if (beamSegment == null) break block18;
-                    if (Arrays.equals(fs, beamSegment.color)) {
+                    if (color == beamSegment.color) {
                         beamSegment.increaseHeight();
                     } else {
-                        beamSegment = new BeamSegment(new float[]{(beamSegment.color[0] + fs[0]) / 2.0f, (beamSegment.color[1] + fs[1]) / 2.0f, (beamSegment.color[2] + fs[2]) / 2.0f});
+                        beamSegment = new BeamSegment(ColorHelper.Argb.averageArgb(beamSegment.color, color));
                         blockEntity.beamSegmentList.add(beamSegment);
                     }
                     break block18;
@@ -169,7 +174,7 @@ public class PotionBeaconEntity extends BlockEntity {
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
         for (PlayerEntity playerEntity : list) {
             for (PotionBeaconEffect effect : effects) {
-                playerEntity.addStatusEffect(new StatusEffectInstance(effect.effect, 340, effect.amplifier, true, true));
+                playerEntity.addStatusEffect(new StatusEffectInstance((RegistryEntry<StatusEffect>) effect.effect, 340, effect.amplifier, true, true));
             }
         }
     }
@@ -184,18 +189,20 @@ public class PotionBeaconEntity extends BlockEntity {
         return this.level == 0 ? ImmutableList.of() : this.beamSegments;
     }
 
-    public BlockEntityUpdateS2CPacket toUpdatePacket(){
+    @Nullable
+    @Override
+    public Packet<ClientPlayPacketListener> toUpdatePacket(){
         return BlockEntityUpdateS2CPacket.create(this);
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt(){
-        return this.createNbt();
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup wrapperLookup){
+        return this.createNbt(wrapperLookup);
     }
 
     @Override
-    public void readNbt(NbtCompound nbt){
-        super.readNbt(nbt);
+    public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){
+        super.readNbt(nbt, wrapper);
         charges = nbt.getInt("Charges");
         NbtList nbtList = nbt.getList("Effects", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < nbtList.size(); i++){
@@ -203,7 +210,7 @@ public class PotionBeaconEntity extends BlockEntity {
         }
     }
     @Override
-    protected void writeNbt(NbtCompound nbt){
+    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){
         nbt.putInt("Level", level);
         nbt.putInt("Charges", charges);
         NbtList nbtList = new NbtList();
@@ -211,7 +218,7 @@ public class PotionBeaconEntity extends BlockEntity {
             nbtList.add(effect.toNBT());
         }
         nbt.put("Effects", nbtList);
-        super.writeNbt(nbt);
+        super.writeNbt(nbt, wrapper);
     }
 
     @Override
@@ -221,16 +228,16 @@ public class PotionBeaconEntity extends BlockEntity {
     }
 
     public static class BeamSegment {
-        final float[] color;
+        final int color;
         private int height;
-        public BeamSegment(float[] color){
+        public BeamSegment(int color){
             this.color = color;
             this.height = 1;
         }
         protected void increaseHeight(){
             ++this.height;
         }
-        public float[] getColor() {
+        public int getColor() {
             return this.color;
         }
         public int getHeight() {
