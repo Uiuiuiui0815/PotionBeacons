@@ -24,14 +24,14 @@ public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<Poti
     public PotionBeaconBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
     }
 
-    public void render(PotionBeaconEntity beaconBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
-        long l = beaconBlockEntity.getWorld().getTime();
-        List<PotionBeaconEntity.BeamSegment> list = beaconBlockEntity.getBeamSegments();
+    public void render(PotionBeaconEntity potionBeaconEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
+        long l = potionBeaconEntity.getWorld().getTime();
+        List<PotionBeaconEntity.BeamSegment> list = potionBeaconEntity.getBeamSegments();
         int k = 0;
 
         for(int m = 0; m < list.size(); ++m) {
-            PotionBeaconEntity.BeamSegment beamSegment = (PotionBeaconEntity.BeamSegment)list.get(m);
-            renderBeam(matrixStack, vertexConsumerProvider, f, l, k, m == list.size() - 1 ? 1024 : beamSegment.getHeight(), beamSegment.getColor());
+            PotionBeaconEntity.BeamSegment beamSegment = list.get(m);
+            renderBeam(matrixStack, vertexConsumerProvider, f, l, k, m == list.size() - 1 ? MAX_BEAM_HEIGHT : beamSegment.getHeight(), beamSegment.getColor());
             k += beamSegment.getHeight();
         }
 

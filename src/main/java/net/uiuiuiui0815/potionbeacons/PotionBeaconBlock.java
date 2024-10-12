@@ -20,7 +20,6 @@ import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemActionResult;
 import net.minecraft.util.function.BooleanBiFunction;
@@ -40,7 +39,7 @@ import java.util.List;
 
 import static net.minecraft.particle.ParticleTypes.ENTITY_EFFECT;
 
-public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider, Stainable {
+public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider {
     public static final MapCodec<PotionBeaconBlock> CODEC = PotionBeaconBlock.createCodec(PotionBeaconBlock::new);
 
     public MapCodec<PotionBeaconBlock> getCodec() {
@@ -171,11 +170,10 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         if (direction == Direction.UP){
             return;
         }
-        BlockEntity blockEntity = world.getBlockEntity(pos);
+        PotionBeaconEntity blockEntity = (PotionBeaconEntity) world.getBlockEntity(pos);
         if (blockEntity == null ||
-                ((PotionBeaconEntity) blockEntity).effects.isEmpty() ||
-                ((PotionBeaconEntity) blockEntity).level < 4 ||
-                ((PotionBeaconEntity) blockEntity).charges <= 0) {
+                blockEntity.effects.isEmpty() ||
+                blockEntity.level < 4) {
             return;
         }
         BlockPos blockPos = pos.offset(direction);
@@ -186,12 +184,7 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         double d = direction.getOffsetX() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetX() * 0.6;
         double e = direction.getOffsetY() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetY() * 0.6;
         double f = direction.getOffsetZ() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetZ() * 0.6;
-        EntityEffectParticleEffect effect = EntityEffectParticleEffect.create(ENTITY_EFFECT,1.0f,0.7f,0.2f);
+        EntityEffectParticleEffect effect = EntityEffectParticleEffect.create(ENTITY_EFFECT,((PotionBeaconEntity) blockEntity).getColor());
         world.addParticle(effect, (double) pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + f, 0,0,0);
-    }
-
-    @Override
-    public DyeColor getColor() {
-        return DyeColor.WHITE;
     }
 }

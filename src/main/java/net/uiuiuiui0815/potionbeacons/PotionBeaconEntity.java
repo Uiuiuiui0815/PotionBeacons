@@ -8,7 +8,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.Stainable;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -18,7 +18,6 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
@@ -40,6 +39,12 @@ public class PotionBeaconEntity extends BlockEntity {
     private int minY;
     List<PotionBeaconEffect> effects;
     int charges;
+
+    private int color;
+
+    public int getColor() {
+        return color;
+    }
 
     public PotionBeaconEntity(BlockPos pos, BlockState state) {
         super(PotionBeacons.POTION_BEACON_ENTITY, pos, state);
@@ -65,27 +70,25 @@ public class PotionBeaconEntity extends BlockEntity {
             block18: {
                 BlockState blockState;
                 block16: {
-                    int color;
                     block17: {
                         blockState = world.getBlockState(blockPos);
                         Block block = blockState.getBlock();
-                        if (!(block instanceof Stainable)) break block16;
-                        color = 123;
+                        if (!(block instanceof Stainable || blockState.isOf(PotionBeaconBlock.POTION_BEACON_BLOCK))) break block16;
                         if (blockEntity.beamSegmentList.size() > 1) break block17;
-                        beamSegment = new BeamSegment(color);
+                        beamSegment = new BeamSegment(blockEntity.color);
                         blockEntity.beamSegmentList.add(beamSegment);
                         break block18;
                     }
                     if (beamSegment == null) break block18;
-                    if (color == beamSegment.color) {
+                    if (blockEntity.color == beamSegment.color) {
                         beamSegment.increaseHeight();
                     } else {
-                        beamSegment = new BeamSegment(ColorHelper.Argb.averageArgb(beamSegment.color, color));
+                        beamSegment = new BeamSegment(ColorHelper.Argb.averageArgb(beamSegment.color, blockEntity.color));
                         blockEntity.beamSegmentList.add(beamSegment);
                     }
                     break block18;
                 }
-                if (beamSegment != null && (blockState.getOpacity(world, blockPos) < 15 || blockState.isOf(Blocks.BEDROCK))) {
+                if (beamSegment != null && (blockState.getOpacity(world, blockPos) < 15 || blockState.isOf(Blocks.BEDROCK) || blockState.isOf(PotionBeaconBlock.POTION_BEACON_BLOCK))) {
                     beamSegment.increaseHeight();
                 } else {
                     blockEntity.beamSegmentList.clear();
@@ -108,6 +111,12 @@ public class PotionBeaconEntity extends BlockEntity {
             if (blockEntity.level >= 4 && !blockEntity.beamSegments.isEmpty()) {
                 blockEntity.charges = PotionBeaconEntity.updateCharges(world, pos, blockEntity.charges);
                 blockEntity.markDirty();
+                if (blockEntity.charges == 0 && !blockEntity.effects.isEmpty()) {
+                    blockEntity.effects.clear();
+                    blockEntity.beamSegments.clear();
+                    blockEntity.updateColor();
+                }
+                blockEntity.markDirty();
             }
         }
         if (blockEntity.minY >= l) {
@@ -126,6 +135,16 @@ public class PotionBeaconEntity extends BlockEntity {
                 }
             }
         }
+    }
+
+    private void updateColor(){
+        List<StatusEffectInstance> instances = new ArrayList<>();
+        for(PotionBeaconEffect potionBeaconEffect : effects){
+            instances.add(potionBeaconEffect.createStatusEffectInstance());
+        }
+        color = PotionContentsComponent.getColor(instances);
+        if (instances.isEmpty()) color = -1;
+        this.markDirty();
     }
 
     private static int updateLevel(World world, int x, int y, int z){
@@ -161,8 +180,9 @@ public class PotionBeaconEntity extends BlockEntity {
         if (!effects.equals(list) || effects.isEmpty()) {
             effects = new ArrayList<>();
             effects.addAll(list);
-            charges = 1500;
+            charges = 15;
         }
+        updateColor();
         this.markDirty();
     }
 
@@ -174,7 +194,7 @@ public class PotionBeaconEntity extends BlockEntity {
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
         for (PlayerEntity playerEntity : list) {
             for (PotionBeaconEffect effect : effects) {
-                playerEntity.addStatusEffect(new StatusEffectInstance((RegistryEntry<StatusEffect>) effect.effect, 340, effect.amplifier, true, true));
+                playerEntity.addStatusEffect(effect.createStatusEffectInstance());
             }
         }
     }
@@ -182,7 +202,7 @@ public class PotionBeaconEntity extends BlockEntity {
     private static int updateCharges(World world, BlockPos pos, int charges){
         Box box = new Box(pos).expand(50).stretch(0.0, world.getHeight(), 0.0);
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
-        return charges - list.size();
+        return Math.max(charges - list.size(), 0);
     }
 
     public List<BeamSegment> getBeamSegments() {
@@ -208,6 +228,7 @@ public class PotionBeaconEntity extends BlockEntity {
         for (int i = 0; i < nbtList.size(); i++){
             effects.add(new PotionBeaconEffect(nbtList.getCompound(i)));
         }
+        updateColor();
     }
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){

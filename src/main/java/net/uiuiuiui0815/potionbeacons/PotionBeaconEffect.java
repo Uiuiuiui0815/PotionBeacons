@@ -1,8 +1,11 @@
 package net.uiuiuiui0815.potionbeacons;
 
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 
 import java.util.Objects;
@@ -39,5 +42,9 @@ public class PotionBeaconEffect {
 
         if (amplifier != that.amplifier) return false;
         return Objects.equals(effect, that.effect);
+    }
+
+    public StatusEffectInstance createStatusEffectInstance() {
+        return new StatusEffectInstance(Registries.STATUS_EFFECT.getEntry(effect), 340, amplifier,true,true);
     }
 }
