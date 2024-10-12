@@ -8,7 +8,6 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluids;
@@ -143,17 +142,15 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         ItemStack handStack = player.getStackInHand(hand);
         if (handStack.isOf(Items.LINGERING_POTION)) {
-            BlockEntity blockEntity;
-            List<StatusEffectInstance> list = PotionUtil.getPotionEffects(handStack);
-            if (state.get(HALF) == DoubleBlockHalf.LOWER && (blockEntity = world.getBlockEntity(pos)) instanceof PotionBeaconEntity) {
-                List<StatusEffect> effectList = new ArrayList<>();
-                List<Integer> amplifierList = new ArrayList<>();
-                for (StatusEffectInstance effectInstance : list){
+            List<StatusEffectInstance> potionEffects = PotionUtil.getPotionEffects(handStack);
+            if (state.get(HALF) == DoubleBlockHalf.LOWER && world.getBlockEntity(pos) instanceof PotionBeaconEntity beaconEntity) {
+                List<PotionBeaconEffect> effectList = new ArrayList<>();
+                for (StatusEffectInstance effectInstance : potionEffects){
                     if (effectInstance.getEffectType().isInstant()) return ActionResult.PASS;
-                    effectList.add(effectInstance.getEffectType());
-                    amplifierList.add(effectInstance.getAmplifier());
+                    PotionBeaconEffect effect = new PotionBeaconEffect(effectInstance.getEffectType(), effectInstance.getAmplifier());
+                    effectList.add(effect);
                 }
-                ((PotionBeaconEntity) blockEntity).addEffects(effectList, amplifierList);
+                beaconEntity.addEffects(effectList);
                 if (!player.isCreative()) {
                     player.setStackInHand(hand, ItemUsage.exchangeStack(handStack, player, new ItemStack(Items.GLASS_BOTTLE)));
                 }

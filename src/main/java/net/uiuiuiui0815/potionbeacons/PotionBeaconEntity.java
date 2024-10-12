@@ -8,19 +8,15 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.Stainable;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.Heightmap;
@@ -30,21 +26,18 @@ import org.apache.commons.compress.utils.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public class PotionBeaconEntity extends BlockEntity {
     List<BeamSegment> beamSegments = Lists.newArrayList();
-    private List<BeamSegment> field_19178 = Lists.newArrayList();
+    private List<BeamSegment> beamSegmentList = Lists.newArrayList();
     int level;
     private int minY;
-    List<StatusEffect> effects;
-    List<Integer> amplifiers;
+    List<PotionBeaconEffect> effects;
     int charges;
 
     public PotionBeaconEntity(BlockPos pos, BlockState state) {
         super(PotionBeacons.POTION_BEACON_ENTITY, pos, state);
-        effects = new ArrayList<StatusEffect>();
-        amplifiers = new ArrayList<Integer>();
+        effects = new ArrayList<>();
     }
 
     public static void tick(World world, BlockPos pos, PotionBeaconEntity blockEntity){
@@ -55,12 +48,12 @@ public class PotionBeaconEntity extends BlockEntity {
         int k = pos.getZ();
         if (blockEntity.minY < j){
             blockPos = pos;
-            blockEntity.field_19178 = Lists.newArrayList();
+            blockEntity.beamSegmentList = Lists.newArrayList();
             blockEntity.minY = blockPos.getY() - 1;
         } else {
             blockPos = new BlockPos(i, blockEntity.minY + 1, k);
         }
-        BeamSegment beamSegment = blockEntity.field_19178.isEmpty() ? null : blockEntity.field_19178.get(blockEntity.field_19178.size() - 1);
+        BeamSegment beamSegment = blockEntity.beamSegmentList.isEmpty() ? null : blockEntity.beamSegmentList.get(blockEntity.beamSegmentList.size() - 1);
         int l = world.getTopY(Heightmap.Type.WORLD_SURFACE, i, k);
         for (m = 0; m < 10 && blockPos.getY() <= l; ++m){
             block18: {
@@ -72,9 +65,9 @@ public class PotionBeaconEntity extends BlockEntity {
                         Block block = blockState.getBlock();
                         if (!(block instanceof Stainable)) break block16;
                         fs = ((Stainable) block).getColor().getColorComponents();
-                        if (blockEntity.field_19178.size() > 1) break block17;
+                        if (blockEntity.beamSegmentList.size() > 1) break block17;
                         beamSegment = new BeamSegment(fs);
-                        blockEntity.field_19178.add(beamSegment);
+                        blockEntity.beamSegmentList.add(beamSegment);
                         break block18;
                     }
                     if (beamSegment == null) break block18;
@@ -82,14 +75,14 @@ public class PotionBeaconEntity extends BlockEntity {
                         beamSegment.increaseHeight();
                     } else {
                         beamSegment = new BeamSegment(new float[]{(beamSegment.color[0] + fs[0]) / 2.0f, (beamSegment.color[1] + fs[1]) / 2.0f, (beamSegment.color[2] + fs[2]) / 2.0f});
-                        blockEntity.field_19178.add(beamSegment);
+                        blockEntity.beamSegmentList.add(beamSegment);
                     }
                     break block18;
                 }
                 if (beamSegment != null && (blockState.getOpacity(world, blockPos) < 15 || blockState.isOf(Blocks.BEDROCK))) {
                     beamSegment.increaseHeight();
                 } else {
-                    blockEntity.field_19178.clear();
+                    blockEntity.beamSegmentList.clear();
                     blockEntity.minY = l;
                     break;
                 }
@@ -103,7 +96,7 @@ public class PotionBeaconEntity extends BlockEntity {
                 blockEntity.level = PotionBeaconEntity.updateLevel(world, i, j, k);
             }
             if (blockEntity.level > 0 && !blockEntity.beamSegments.isEmpty()) {
-                PotionBeaconEntity.applyPlayerEffects(world, pos, blockEntity.effects, blockEntity.amplifiers, blockEntity.level, blockEntity.charges);
+                PotionBeaconEntity.applyPlayerEffects(world, pos, blockEntity.effects, blockEntity.level, blockEntity.charges);
                 BeaconBlockEntity.playSound(world, pos, SoundEvents.BLOCK_BEACON_AMBIENT);
             }
             if (blockEntity.level >= 4 && !blockEntity.beamSegments.isEmpty()) {
@@ -113,7 +106,7 @@ public class PotionBeaconEntity extends BlockEntity {
         if (blockEntity.minY >= l) {
             blockEntity.minY = world.getBottomY() - 1;
             boolean bl = m > 0;
-            blockEntity.beamSegments = blockEntity.field_19178;
+            blockEntity.beamSegments = blockEntity.beamSegmentList;
             if (!world.isClient) {
                 boolean bl2 = blockEntity.level > 0;
                 if (!bl && bl2) {
@@ -153,28 +146,20 @@ public class PotionBeaconEntity extends BlockEntity {
         BeaconBlockEntity.playSound(this.world, this.pos, SoundEvents.BLOCK_BEACON_DEACTIVATE);
         super.markRemoved();
     }
-
-    public void addEffects(List<StatusEffect> effectList, List<Integer> amplifiers){
-        if (!effects.equals(effectList) || effects.isEmpty()) {
-            effects = new ArrayList<>();
-            effects.addAll(effectList);
-        }
-        if (!this.amplifiers.equals(amplifiers) || amplifiers.isEmpty()) {
-            this.amplifiers = new ArrayList<>();
-            this.amplifiers.addAll(amplifiers);
-        }
-        if (charges < 0){
-            charges = 0;
-        }
-        if (effects.equals(effectList) && this.amplifiers.equals(amplifiers)){
+    
+    public void addEffects(List<PotionBeaconEffect> list){
+        if (effects.equals(list)) {
             charges += 1500;
-        }else {
-            charges = 0;
+        }
+        if (!effects.equals(list) || effects.isEmpty()) {
+            effects = new ArrayList<>();
+            effects.addAll(list);
+            charges = 1500;
         }
         this.markDirty();
     }
 
-    private static void applyPlayerEffects(World world, BlockPos pos, List<StatusEffect> effects, List<Integer> amplifiers, int level, int charges){
+    private static void applyPlayerEffects(World world, BlockPos pos, List<PotionBeaconEffect> effects, int level, int charges){
         if (charges <=0 || level < 4 || world.isClient) {
             return;
         }
@@ -182,7 +167,7 @@ public class PotionBeaconEntity extends BlockEntity {
         List<PlayerEntity> list = world.getNonSpectatingEntities(PlayerEntity.class, box);
         for (PlayerEntity playerEntity : list) {
             for (int i=0; i < effects.size(); i++){
-                playerEntity.addStatusEffect(new StatusEffectInstance(effects.get(i), 340, amplifiers.get(i), true, true));
+                playerEntity.addStatusEffect(new StatusEffectInstance(effects.get(i).effect, 340, effects.get(i).amplifier, true, true));
             }
         }
     }
@@ -214,12 +199,7 @@ public class PotionBeaconEntity extends BlockEntity {
         charges = nbt.getInt("Charges");
         NbtList nbtList = nbt.getList("Effects", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < nbtList.size(); i++){
-            NbtCompound compound = nbtList.getCompound(i);
-            String s = compound.getString("Effect" + i);
-            String[] parts = s.split("_");
-            StatusEffect statusEffect = Registries.STATUS_EFFECT.get(Identifier.tryParse(parts[0]));
-            effects.add(i, statusEffect);
-            amplifiers.add(Integer.parseInt(parts[1]));
+            effects.add(new PotionBeaconEffect(nbtList.getCompound(i)));
         }
     }
     @Override
@@ -227,11 +207,8 @@ public class PotionBeaconEntity extends BlockEntity {
         nbt.putInt("Level", level);
         nbt.putInt("Charges", charges);
         NbtList nbtList = new NbtList();
-        for (int i = 0; i < effects.size(); i++){
-            String s = Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effects.get(i)))+ "_" + amplifiers.get(i);
-                NbtCompound compound = new NbtCompound();
-                compound.putString("Effect" + i, s);
-                nbtList.add(compound);
+        for (PotionBeaconEffect effect : effects) {
+            nbtList.add(effect.toNBT());
         }
         nbt.put("Effects", nbtList);
         super.writeNbt(nbt);
