@@ -113,7 +113,6 @@ public class PotionBeaconEntity extends BlockEntity {
                 blockEntity.markDirty();
                 if (blockEntity.charges == 0 && !blockEntity.effects.isEmpty()) {
                     blockEntity.effects.clear();
-                    blockEntity.beamSegments.clear();
                     blockEntity.updateColor();
                 }
                 blockEntity.markDirty();
@@ -180,7 +179,7 @@ public class PotionBeaconEntity extends BlockEntity {
         if (!effects.equals(list) || effects.isEmpty()) {
             effects = new ArrayList<>();
             effects.addAll(list);
-            charges = 15;
+            charges = 1500;
         }
         updateColor();
         this.markDirty();
