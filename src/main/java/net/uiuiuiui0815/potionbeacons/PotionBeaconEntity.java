@@ -52,11 +52,10 @@ public class PotionBeaconEntity extends BlockEntity {
     }
 
     public static void tick(World world, BlockPos pos, PotionBeaconEntity blockEntity){
-        int m;
-        BlockPos blockPos;
         int i = pos.getX();
         int j = pos.getY();
         int k = pos.getZ();
+        BlockPos blockPos;
         if (blockEntity.minY < j){
             blockPos = pos;
             blockEntity.beamSegmentList = Lists.newArrayList();
@@ -64,41 +63,39 @@ public class PotionBeaconEntity extends BlockEntity {
         } else {
             blockPos = new BlockPos(i, blockEntity.minY + 1, k);
         }
+
         BeamSegment beamSegment = blockEntity.beamSegmentList.isEmpty() ? null : blockEntity.beamSegmentList.get(blockEntity.beamSegmentList.size() - 1);
         int l = world.getTopY(Heightmap.Type.WORLD_SURFACE, i, k);
+
+        int m;
         for (m = 0; m < 10 && blockPos.getY() <= l; ++m){
-            block18: {
-                BlockState blockState;
-                block16: {
-                    block17: {
-                        blockState = world.getBlockState(blockPos);
-                        Block block = blockState.getBlock();
-                        if (!(block instanceof Stainable || blockState.isOf(PotionBeaconBlock.POTION_BEACON_BLOCK))) break block16;
-                        if (blockEntity.beamSegmentList.size() > 1) break block17;
-                        beamSegment = new BeamSegment(blockEntity.color);
-                        blockEntity.beamSegmentList.add(beamSegment);
-                        break block18;
-                    }
-                    if (beamSegment == null) break block18;
-                    if (blockEntity.color == beamSegment.color) {
+            BlockState blockState = world.getBlockState(blockPos);
+            Block block = blockState.getBlock();
+            if (block instanceof Stainable || block == PotionBeaconBlock.POTION_BEACON_BLOCK) {
+                int n = blockEntity.color;
+                if (blockEntity.beamSegmentList.size() <= 1) {
+                    beamSegment = new BeamSegment(n);
+                    blockEntity.beamSegmentList.add(beamSegment);
+                } else if (beamSegment != null) {
+                    if (n == beamSegment.color) {
                         beamSegment.increaseHeight();
                     } else {
-                        beamSegment = new BeamSegment(ColorHelper.Argb.averageArgb(beamSegment.color, blockEntity.color));
+                        beamSegment = new BeamSegment(ColorHelper.Argb.averageArgb(beamSegment.color, n));
                         blockEntity.beamSegmentList.add(beamSegment);
                     }
-                    break block18;
                 }
-                if (beamSegment != null && (blockState.getOpacity(world, blockPos) < 15 || blockState.isOf(Blocks.BEDROCK) || blockState.isOf(PotionBeaconBlock.POTION_BEACON_BLOCK))) {
-                    beamSegment.increaseHeight();
-                } else {
+            } else {
+                if (beamSegment == null || blockState.getOpacity(world, blockPos) >= 15 && !blockState.isOf(Blocks.BEDROCK)) {
                     blockEntity.beamSegmentList.clear();
                     blockEntity.minY = l;
                     break;
                 }
             }
+
             blockPos = blockPos.up();
             ++blockEntity.minY;
         }
+
         m = blockEntity.level;
         if (world.getTime() % 80L == 0L) {
             if (!blockEntity.beamSegments.isEmpty()) {
@@ -108,16 +105,17 @@ public class PotionBeaconEntity extends BlockEntity {
                 PotionBeaconEntity.applyPlayerEffects(world, pos, blockEntity.effects, blockEntity.level, blockEntity.charges);
                 BeaconBlockEntity.playSound(world, pos, SoundEvents.BLOCK_BEACON_AMBIENT);
             }
-            if (blockEntity.level >= 4 && !blockEntity.beamSegments.isEmpty()) {
+            if (blockEntity.level == 4 && !blockEntity.beamSegments.isEmpty()) {
                 blockEntity.charges = PotionBeaconEntity.updateCharges(world, pos, blockEntity.charges);
-                blockEntity.markDirty();
-                if (blockEntity.charges == 0 && !blockEntity.effects.isEmpty()) {
+                if (blockEntity.charges == 0) {
                     blockEntity.effects.clear();
                     blockEntity.updateColor();
+                    world.updateListeners(pos, blockEntity.getCachedState(), blockEntity.getCachedState(), 0);
                 }
-                blockEntity.markDirty();
             }
+            blockEntity.markDirty();
         }
+
         if (blockEntity.minY >= l) {
             blockEntity.minY = world.getBottomY() - 1;
             boolean bl = m > 0;
@@ -126,7 +124,8 @@ public class PotionBeaconEntity extends BlockEntity {
                 boolean bl2 = blockEntity.level > 0;
                 if (!bl && bl2) {
                     BeaconBlockEntity.playSound(world, pos, SoundEvents.BLOCK_BEACON_ACTIVATE);
-                    for (ServerPlayerEntity serverPlayerEntity : world.getNonSpectatingEntities(ServerPlayerEntity.class, new Box(i, j, k, i, j - 4, k).expand(10, 5, 10))) {
+
+                    for (ServerPlayerEntity serverPlayerEntity : world.getNonSpectatingEntities(ServerPlayerEntity.class, (new Box(i, j, k, i, j - 4, k)).expand(10, 5, 10))) {
                         Criteria.CONSTRUCT_BEACON.trigger(serverPlayerEntity, blockEntity.level);
                     }
                 } else if (bl && !bl2){
@@ -227,6 +226,7 @@ public class PotionBeaconEntity extends BlockEntity {
         for (int i = 0; i < nbtList.size(); i++){
             effects.add(new PotionBeaconEffect(nbtList.getCompound(i)));
         }
+        color = nbt.getInt("Color");
         updateColor();
     }
     @Override
@@ -238,6 +238,7 @@ public class PotionBeaconEntity extends BlockEntity {
             nbtList.add(effect.toNBT());
         }
         nbt.put("Effects", nbtList);
+        nbt.putInt("Color", color);
         super.writeNbt(nbt, wrapper);
     }
 

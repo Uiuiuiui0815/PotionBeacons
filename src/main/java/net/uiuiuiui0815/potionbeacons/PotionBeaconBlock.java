@@ -167,7 +167,7 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
             return;
         }
         Direction direction = Direction.random(random);
-        if (direction == Direction.UP){
+        if (direction == Direction.DOWN){
             return;
         }
         PotionBeaconEntity blockEntity = (PotionBeaconEntity) world.getBlockEntity(pos);
