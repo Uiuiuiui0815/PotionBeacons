@@ -64,7 +64,7 @@ public class PotionBeaconEntity extends BlockEntity {
             blockPos = new BlockPos(i, blockEntity.minY + 1, k);
         }
 
-        BeamSegment beamSegment = blockEntity.beamSegmentList.isEmpty() ? null : blockEntity.beamSegmentList.get(blockEntity.beamSegmentList.size() - 1);
+        BeamSegment beamSegment = blockEntity.beamSegmentList.isEmpty() ? null : blockEntity.beamSegmentList.getLast();
         int l = world.getTopY(Heightmap.Type.WORLD_SURFACE, i, k);
 
         int m;
@@ -80,12 +80,12 @@ public class PotionBeaconEntity extends BlockEntity {
                     if (n == beamSegment.color) {
                         beamSegment.increaseHeight();
                     } else {
-                        beamSegment = new BeamSegment(ColorHelper.Argb.averageArgb(beamSegment.color, n));
+                        beamSegment = new BeamSegment(ColorHelper.average(beamSegment.color, n));
                         blockEntity.beamSegmentList.add(beamSegment);
                     }
                 }
             } else {
-                if (beamSegment == null || blockState.getOpacity(world, blockPos) >= 15 && !blockState.isOf(Blocks.BEDROCK)) {
+                if (beamSegment == null || blockState.getOpacity() >= 15 && !blockState.isOf(Blocks.BEDROCK)) {
                     blockEntity.beamSegmentList.clear();
                     blockEntity.minY = l;
                     break;

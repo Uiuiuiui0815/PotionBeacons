@@ -21,7 +21,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
-import net.minecraft.util.ItemActionResult;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -31,7 +31,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
+import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -83,12 +84,12 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         }
     }
 
-    public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos) {
+    public BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
         DoubleBlockHalf doubleBlockHalf = state.get(HALF);
         if (direction.getAxis() == Direction.Axis.Y && doubleBlockHalf == DoubleBlockHalf.LOWER == (direction == Direction.UP)) {
-            return neighborState.getBlock() instanceof PotionBeaconBlock && neighborState.get(HALF) != doubleBlockHalf ? neighborState.with(HALF, doubleBlockHalf) : Blocks.AIR.getDefaultState();
+            return neighborState.getBlock() instanceof DoorBlock && neighborState.get(HALF) != doubleBlockHalf ? neighborState.with(HALF, doubleBlockHalf) : Blocks.AIR.getDefaultState();
         } else {
-            return doubleBlockHalf == DoubleBlockHalf.LOWER && direction == Direction.DOWN && !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() : super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+            return doubleBlockHalf == DoubleBlockHalf.LOWER && direction == Direction.DOWN && !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() : super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
         }
     }
 
@@ -104,7 +105,7 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     public BlockState getPlacementState(ItemPlacementContext ctx) {
         BlockPos blockPos = ctx.getBlockPos();
         World world = ctx.getWorld();
-        if (blockPos.getY() < world.getTopY() - 1 && world.getBlockState(blockPos.up()).canReplace(ctx)) {
+        if (blockPos.getY() < world.getTopYInclusive() && world.getBlockState(blockPos.up()).canReplace(ctx)) {
             return this.getDefaultState().with(HALF, DoubleBlockHalf.LOWER);
         } else {
             return null;
@@ -140,14 +141,14 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     }
 
     @Override
-    protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (stack.isOf(Items.LINGERING_POTION)) {
             PotionContentsComponent potionContentsComponent = stack.getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT);
             Iterable<StatusEffectInstance> potionEffects = potionContentsComponent.getEffects();
             if (state.get(HALF) == DoubleBlockHalf.LOWER && world.getBlockEntity(pos) instanceof PotionBeaconEntity beaconEntity) {
                 List<PotionBeaconEffect> effectList = new ArrayList<>();
                 for (StatusEffectInstance effectInstance : potionEffects){
-                    if (effectInstance.getEffectType().value().isInstant()) return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+                    if (effectInstance.getEffectType().value().isInstant()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
                     PotionBeaconEffect effect = new PotionBeaconEffect(effectInstance.getEffectType().value(), effectInstance.getAmplifier());
                     effectList.add(effect);
                 }
@@ -155,10 +156,10 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
                 if (!player.isCreative()) {
                     player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
                 }
-                return ItemActionResult.SUCCESS;
+                return ActionResult.SUCCESS;
             }
         }
-        return ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
     }
 
     @Override

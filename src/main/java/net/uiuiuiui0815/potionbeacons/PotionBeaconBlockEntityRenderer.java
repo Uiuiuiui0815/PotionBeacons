@@ -14,7 +14,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.ColorHelper.Argb;
+import net.minecraft.util.math.ColorHelper;
 
 @Environment(EnvType.CLIENT)
 public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<PotionBeaconEntity> {
@@ -64,7 +64,7 @@ public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<Poti
         n = -outerRadius;
         t = -1.0F + h;
         u = (float)maxY * heightScale + t;
-        renderBeamLayer(matrices, vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(textureId, true)), Argb.withAlpha(32, color), yOffset, i, j, k, outerRadius, m, n, outerRadius, outerRadius, outerRadius, u, t);
+        renderBeamLayer(matrices, vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(textureId, true)), ColorHelper.withAlpha(32, color), yOffset, i, j, k, outerRadius, m, n, outerRadius, outerRadius, outerRadius, u, t);
         matrices.pop();
     }
 
