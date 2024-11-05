@@ -19,7 +19,7 @@ public class PotionBeacons implements ModInitializer {
 		return Registry.register(Registries.BLOCK_ENTITY_TYPE, Identifier.of(MOD_ID, path), blockEntityType);
 	}
 	public static final BlockEntityType<PotionBeaconEntity> POTION_BEACON_ENTITY = register("potion_beacon",
-	FabricBlockEntityTypeBuilder.create(PotionBeaconEntity::new, PotionBeaconBlock.POTION_BEACON_BLOCK).build());
+			FabricBlockEntityTypeBuilder.create(PotionBeaconEntity::new, PotionBeaconBlock.POTION_BEACON_BLOCK).build());
 	@Override
 	public void onInitialize() {
 		Registry.register(Registries.BLOCK, Identifier.of(MOD_ID, "potion_beacon"), PotionBeaconBlock.POTION_BEACON_BLOCK);

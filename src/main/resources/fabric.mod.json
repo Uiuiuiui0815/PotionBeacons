@@ -3,7 +3,7 @@
 	"id": "potionbeacons",
 	"version": "${version}",
 	"name": "Potion Beacons",
-	"description": "Put your Potions in a Beacon to share effects with friends or foes",
+	"description": "Put your Potions in a Beacon",
 	"authors": [
 		"Uiuiuiui0815"
 	],
