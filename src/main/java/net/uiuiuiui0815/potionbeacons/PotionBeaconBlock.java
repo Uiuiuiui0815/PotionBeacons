@@ -17,11 +17,14 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
 import net.minecraft.particle.EntityEffectParticleEffect;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -48,7 +51,7 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
     }
 
     public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
-    public static final PotionBeaconBlock POTION_BEACON_BLOCK = new PotionBeaconBlock(AbstractBlock.Settings.copy(Blocks.BEACON).nonOpaque());
+    public static final PotionBeaconBlock POTION_BEACON_BLOCK = new PotionBeaconBlock(AbstractBlock.Settings.copy(Blocks.BEACON).registryKey(RegistryKey.of(RegistryKeys.BLOCK, Identifier.of(PotionBeacons.MOD_ID, "potion_beacon"))));
 
     public PotionBeaconBlock(Settings settings) {
         super(settings);
