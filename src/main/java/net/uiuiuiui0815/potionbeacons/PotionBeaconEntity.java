@@ -107,10 +107,10 @@ public class PotionBeaconEntity extends BlockEntity {
             }
             if (blockEntity.level == 4 && !blockEntity.beamSegments.isEmpty()) {
                 blockEntity.charges = PotionBeaconEntity.updateCharges(world, pos, blockEntity.charges);
+                world.updateListeners(pos, blockEntity.getCachedState(), blockEntity.getCachedState(), 0);
                 if (blockEntity.charges == 0) {
                     blockEntity.effects.clear();
                     blockEntity.updateColor();
-                    world.updateListeners(pos, blockEntity.getCachedState(), blockEntity.getCachedState(), 0);
                 }
             }
             blockEntity.markDirty();

@@ -1,20 +1,25 @@
 package net.uiuiuiui0815.potionbeacons;
 
-import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.ColorHelper;
+
+import java.util.List;
 
 @Environment(EnvType.CLIENT)
 public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<PotionBeaconEntity> {
@@ -35,6 +40,68 @@ public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<Poti
             k += beamSegment.getHeight();
         }
 
+        if(potionBeaconEntity.charges <= 0) {
+            return;
+        }
+        int color = potionBeaconEntity.getColor();
+        Sprite sprite = FluidVariantRendering.getSprites(FluidVariant.of(Fluids.WATER))[0];
+        RenderLayer potionLayer = RenderLayer.getEntityTranslucent(sprite.getAtlasId());
+        VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(potionLayer);
+        float y1 = 1f;
+        float y2 = potionBeaconEntity.charges / 6000f + 1;
+        float minU = sprite.getFrameU(2/16f);
+        float maxU = sprite.getFrameU(14/16f);
+        float minV = sprite.getFrameV(2/16f);
+        float maxV = sprite.getFrameV(14/16f);
+        MatrixStack.Entry entry = matrixStack.peek();
+        vertexConsumer.vertex(entry, 2/16f, y2, 2/16f)
+                .color(color)
+                .texture(minU, minV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
+        vertexConsumer.vertex(entry, 14/16f, y2, 2/16f)
+                .color(color)
+                .texture(maxU, minV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
+        vertexConsumer.vertex(entry, 14/16f, y2, 14/16f)
+                .color(color)
+                .texture(maxU, maxV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
+        vertexConsumer.vertex(entry, 2/16f, y2, 14/16f)
+                .color(color)
+                .texture(minU, maxV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
+        vertexConsumer.vertex(entry, 2/16f, y1, 2/16f)
+                .color(color)
+                .texture(minU, minV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
+        vertexConsumer.vertex(entry, 14/16f, y1, 2/16f)
+                .color(color)
+                .texture(maxU, minV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
+        vertexConsumer.vertex(entry, 14/16f, y1, 14/16f)
+                .color(color)
+                .texture(maxU, maxV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
+        vertexConsumer.vertex(entry, 2/16f, y1, 14/16f)
+                .color(color)
+                .texture(minU, maxV)
+                .light(i)
+                .overlay(j)
+                .normal(0,1,0);
     }
 
     private static void renderBeam(MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, long worldTime, int yOffset, int maxY, int color) {

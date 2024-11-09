@@ -152,9 +152,10 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
             PotionContentsComponent potionContentsComponent = stack.getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT);
             Iterable<StatusEffectInstance> potionEffects = potionContentsComponent.getEffects();
             if (state.get(HALF) == DoubleBlockHalf.LOWER && world.getBlockEntity(pos) instanceof PotionBeaconEntity beaconEntity) {
+                if (beaconEntity.charges > 3000) return ActionResult.CONSUME;
                 List<PotionBeaconEffect> effectList = new ArrayList<>();
                 for (StatusEffectInstance effectInstance : potionEffects){
-                    if (effectInstance.getEffectType().value().isInstant()) return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+                    if (effectInstance.getEffectType().value().isInstant()) return ActionResult.CONSUME;
                     PotionBeaconEffect effect = new PotionBeaconEffect(effectInstance.getEffectType().value(), effectInstance.getAmplifier());
                     effectList.add(effect);
                 }
