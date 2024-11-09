@@ -72,12 +72,7 @@ public class PotionBeaconEntity extends BlockEntity {
             BlockState blockState = world.getBlockState(blockPos);
             Block block = blockState.getBlock();
             if (block instanceof Stainable || block == PotionBeaconBlock.POTION_BEACON_BLOCK) {
-                int n;
-                if (block instanceof Stainable stainable){
-                    n = stainable.getColor().getEntityColor();
-                } else {
-                    n = blockEntity.color;
-                }
+                int n = blockEntity.color;
                 if (blockEntity.beamSegmentList.size() <= 1) {
                     beamSegment = new BeamSegment(n);
                     blockEntity.beamSegmentList.add(beamSegment);
