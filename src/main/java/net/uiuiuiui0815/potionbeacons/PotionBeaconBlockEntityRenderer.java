@@ -47,56 +47,55 @@ public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<Poti
         Sprite sprite = FluidVariantRendering.getSprites(FluidVariant.of(Fluids.WATER))[0];
         RenderLayer potionLayer = RenderLayer.getEntityTranslucent(sprite.getAtlasId());
         VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(potionLayer);
-        float y1 = 1f;
-        float y2 = potionBeaconEntity.charges / 6000f + 1;
+        float y2 = (float) Math.ceil((double) potionBeaconEntity.charges / 1500) * 3/16;
         float minU = sprite.getFrameU(2/16f);
         float maxU = sprite.getFrameU(14/16f);
         float minV = sprite.getFrameV(2/16f);
         float maxV = sprite.getFrameV(14/16f);
         MatrixStack.Entry entry = matrixStack.peek();
-        vertexConsumer.vertex(entry, 2/16f, y2, 2/16f)
+        vertexConsumer.vertex(entry, 2/16f, y2+1, 2/16f)
                 .color(color)
                 .texture(minU, minV)
                 .light(i)
                 .overlay(j)
                 .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, y2, 2/16f)
+        vertexConsumer.vertex(entry, 14/16f, y2+1, 2/16f)
                 .color(color)
                 .texture(maxU, minV)
                 .light(i)
                 .overlay(j)
                 .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, y2, 14/16f)
+        vertexConsumer.vertex(entry, 14/16f, y2+1, 14/16f)
                 .color(color)
                 .texture(maxU, maxV)
                 .light(i)
                 .overlay(j)
                 .normal(0,1,0);
-        vertexConsumer.vertex(entry, 2/16f, y2, 14/16f)
+        vertexConsumer.vertex(entry, 2/16f, y2+1, 14/16f)
                 .color(color)
                 .texture(minU, maxV)
                 .light(i)
                 .overlay(j)
                 .normal(0,1,0);
-        vertexConsumer.vertex(entry, 2/16f, y1, 2/16f)
+        vertexConsumer.vertex(entry, 2/16f, 1, 2/16f)
                 .color(color)
                 .texture(minU, minV)
                 .light(i)
                 .overlay(j)
                 .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, y1, 2/16f)
+        vertexConsumer.vertex(entry, 14/16f, 1, 2/16f)
                 .color(color)
                 .texture(maxU, minV)
                 .light(i)
                 .overlay(j)
                 .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, y1, 14/16f)
+        vertexConsumer.vertex(entry, 14/16f, 1, 14/16f)
                 .color(color)
                 .texture(maxU, maxV)
                 .light(i)
                 .overlay(j)
                 .normal(0,1,0);
-        vertexConsumer.vertex(entry, 2/16f, y1, 14/16f)
+        vertexConsumer.vertex(entry, 2/16f, 1, 14/16f)
                 .color(color)
                 .texture(minU, maxV)
                 .light(i)

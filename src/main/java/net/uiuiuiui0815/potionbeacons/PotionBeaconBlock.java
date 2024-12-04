@@ -16,14 +16,13 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsage;
 import net.minecraft.item.Items;
-import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.util.Hand;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
@@ -40,8 +39,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static net.minecraft.particle.ParticleTypes.ENTITY_EFFECT;
 
 public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityProvider {
     public static final MapCodec<PotionBeaconBlock> CODEC = PotionBeaconBlock.createCodec(PotionBeaconBlock::new);
@@ -167,32 +164,5 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
             }
         }
         return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
-    }
-
-    @Override
-    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-        if (random.nextInt(2) != 0){
-            return;
-        }
-        Direction direction = Direction.random(random);
-        if (direction == Direction.DOWN){
-            return;
-        }
-        PotionBeaconEntity blockEntity = (PotionBeaconEntity) world.getBlockEntity(pos);
-        if (blockEntity == null ||
-                blockEntity.effects.isEmpty() ||
-                blockEntity.level < 4) {
-            return;
-        }
-        BlockPos blockPos = pos.offset(direction);
-        BlockState blockState = world.getBlockState(blockPos);
-        if (state.isOpaque() && blockState.isSideSolidFullSquare(world, blockPos, direction.getOpposite())) {
-            return;
-        }
-        double d = direction.getOffsetX() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetX() * 0.6;
-        double e = direction.getOffsetY() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetY() * 0.6;
-        double f = direction.getOffsetZ() == 0 ? random.nextDouble() : 0.5 + (double)direction.getOffsetZ() * 0.6;
-        EntityEffectParticleEffect effect = EntityEffectParticleEffect.create(ENTITY_EFFECT, blockEntity.getColor());
-        world.addParticle(effect, (double) pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + f, 0,0,0);
     }
 }

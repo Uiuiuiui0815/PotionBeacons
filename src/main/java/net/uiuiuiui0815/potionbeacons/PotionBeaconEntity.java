@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 
 public class PotionBeaconEntity extends BlockEntity {
     List<BeamSegment> beamSegments = Lists.newArrayList();
@@ -136,12 +137,13 @@ public class PotionBeaconEntity extends BlockEntity {
     }
 
     private void updateColor(){
+        OptionalInt optionalColor;
         List<StatusEffectInstance> instances = new ArrayList<>();
         for(PotionBeaconEffect potionBeaconEffect : effects){
             instances.add(potionBeaconEffect.createStatusEffectInstance());
         }
-        color = PotionContentsComponent.getColor(instances);
-        if (instances.isEmpty()) color = -1;
+        optionalColor = PotionContentsComponent.mixColors(instances);
+        color = optionalColor.orElse(-1);
         this.markDirty();
     }
 
