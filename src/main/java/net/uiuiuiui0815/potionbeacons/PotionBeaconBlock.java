@@ -66,10 +66,10 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
             return VoxelShapes.cuboid(0f, 0f, 0f, 1.0f, 1.0f, 1.0f);
         } else {
             return VoxelShapes.combineAndSimplify(
-                    VoxelShapes.combine(createCuboidShape(0, 0, 0, 16, 13, 2),
-                            createCuboidShape(0, 0, 0, 2, 13, 16), BooleanBiFunction.OR),
-                    VoxelShapes.combine(createCuboidShape(0, 0, 14, 16, 13, 16),
-                            createCuboidShape(14, 0, 0, 16, 13, 16), BooleanBiFunction.OR),
+                    VoxelShapes.combine(createCuboidShape(0, 0, 0, 16, 12, 2),
+                            createCuboidShape(0, 0, 0, 2, 12, 16), BooleanBiFunction.OR),
+                    VoxelShapes.combine(createCuboidShape(0, 0, 14, 16, 12, 16),
+                            createCuboidShape(14, 0, 0, 16, 12, 16), BooleanBiFunction.OR),
                     BooleanBiFunction.OR);
         }
     }
