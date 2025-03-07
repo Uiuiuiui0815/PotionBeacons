@@ -13,8 +13,8 @@ public class PotionBeaconEffect {
     public StatusEffect effect;
 
     public PotionBeaconEffect(NbtCompound nbtCompound){
-        amplifier=nbtCompound.getInt("lvl");
-        String s = nbtCompound.getString("Effect");
+        amplifier=nbtCompound.getInt("amplifier");
+        String s = nbtCompound.getString("effect");
         effect = Registries.STATUS_EFFECT.get(Identifier.tryParse(s));
     }
 
@@ -25,8 +25,8 @@ public class PotionBeaconEffect {
 
     public NbtCompound toNBT(){
         NbtCompound nbtCompound = new NbtCompound();
-        nbtCompound.putString("Effect", Registries.STATUS_EFFECT.getId(effect).toString());
-        nbtCompound.putInt("lvl", amplifier);
+        nbtCompound.putString("effect", Registries.STATUS_EFFECT.getId(effect).toString());
+        nbtCompound.putInt("amplifier", amplifier);
 
         return nbtCompound;
     }

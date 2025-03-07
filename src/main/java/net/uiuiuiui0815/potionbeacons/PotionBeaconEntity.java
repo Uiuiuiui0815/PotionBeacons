@@ -108,11 +108,11 @@ public class PotionBeaconEntity extends BlockEntity {
             }
             if (blockEntity.level == 4 && !blockEntity.beamSegments.isEmpty()) {
                 blockEntity.charges = PotionBeaconEntity.updateCharges(world, pos, blockEntity.charges);
-                world.updateListeners(pos, blockEntity.getCachedState(), blockEntity.getCachedState(), 0);
                 if (blockEntity.charges == 0) {
                     blockEntity.effects.clear();
                     blockEntity.updateColor();
                 }
+                world.updateListeners(pos, blockEntity.getCachedState(), blockEntity.getCachedState(), 0);
             }
             blockEntity.markDirty();
         }
@@ -145,6 +145,7 @@ public class PotionBeaconEntity extends BlockEntity {
         optionalColor = PotionContentsComponent.mixColors(instances);
         color = optionalColor.orElse(-1);
         this.markDirty();
+        world.updateListeners(pos, this.getCachedState(), this.getCachedState(), 0);
     }
 
     private static int updateLevel(World world, int x, int y, int z){
@@ -174,14 +175,13 @@ public class PotionBeaconEntity extends BlockEntity {
     }
     
     public void addEffects(List<PotionBeaconEffect> list){
-        if (effects.equals(list)) {
-            charges += 1500;
-        }
         if (!effects.equals(list) || effects.isEmpty()) {
             effects = new ArrayList<>();
             effects.addAll(list);
             charges = 1500;
-        }
+            if (effects.isEmpty()) charges = 0;
+        } else charges += 1500;
+        world.updateListeners(pos, this.getCachedState(), this.getCachedState(), 0);
         updateColor();
         this.markDirty();
     }
@@ -223,24 +223,24 @@ public class PotionBeaconEntity extends BlockEntity {
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){
         super.readNbt(nbt, wrapper);
-        charges = nbt.getInt("Charges");
-        NbtList nbtList = nbt.getList("Effects", NbtElement.COMPOUND_TYPE);
+        charges = nbt.getInt("charges");
+        NbtList nbtList = nbt.getList("effects", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < nbtList.size(); i++){
             effects.add(new PotionBeaconEffect(nbtList.getCompound(i)));
         }
-        color = nbt.getInt("Color");
+        color = nbt.getInt("color");
         updateColor();
     }
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){
-        nbt.putInt("Level", level);
-        nbt.putInt("Charges", charges);
+        nbt.putInt("level", level);
+        nbt.putInt("charges", charges);
         NbtList nbtList = new NbtList();
         for (PotionBeaconEffect effect : effects) {
             nbtList.add(effect.toNBT());
         }
-        nbt.put("Effects", nbtList);
-        nbt.putInt("Color", color);
+        nbt.put("effects", nbtList);
+        nbt.putInt("color", color);
         super.writeNbt(nbt, wrapper);
     }
 
