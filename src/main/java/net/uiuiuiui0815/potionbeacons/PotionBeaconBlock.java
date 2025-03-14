@@ -148,7 +148,11 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
         if (stack.isOf(Items.LINGERING_POTION)) {
             PotionContentsComponent potionContentsComponent = stack.getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT);
             Iterable<StatusEffectInstance> potionEffects = potionContentsComponent.getEffects();
-            if (state.get(HALF) == DoubleBlockHalf.LOWER && world.getBlockEntity(pos) instanceof PotionBeaconEntity beaconEntity) {
+            BlockPos beaconPos = pos;
+            if (state.get(HALF) == DoubleBlockHalf.UPPER) {
+                beaconPos = pos.down();
+            }
+            if (world.getBlockEntity(beaconPos) instanceof PotionBeaconEntity beaconEntity) {
                 List<PotionBeaconEffect> effectList = new ArrayList<>();
                 for (StatusEffectInstance effectInstance : potionEffects){
                     if (effectInstance.getEffectType().value().isInstant()) return ActionResult.SUCCESS;

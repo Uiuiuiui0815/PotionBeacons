@@ -47,7 +47,7 @@ public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<Poti
         Sprite sprite = FluidVariantRendering.getSprites(FluidVariant.of(Fluids.WATER))[0];
         RenderLayer potionLayer = RenderLayer.getEntityTranslucent(sprite.getAtlasId());
         VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(potionLayer);
-        float y2 = (float) Math.ceil((double) potionBeaconEntity.charges / 1500)*3/16+9/8f;
+        float y2 = (float) Math.min(Math.ceil((double) potionBeaconEntity.charges / 1500)*3/16+9/8f, 27f/16);
         float minU = sprite.getFrameU(2/16f);
         float maxU = sprite.getFrameU(14/16f);
         float minV = sprite.getFrameV(2/16f);
