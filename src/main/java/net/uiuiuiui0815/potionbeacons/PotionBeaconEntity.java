@@ -7,15 +7,13 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Stainable;
 import net.minecraft.block.entity.BeaconBlockEntity;
+import net.minecraft.block.entity.BeamEmitter;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.BlockTags;
@@ -26,21 +24,16 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
-import org.apache.commons.compress.utils.Lists;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.OptionalInt;
+import java.util.*;
 
-public class PotionBeaconEntity extends BlockEntity {
-    List<BeamSegment> beamSegments = Lists.newArrayList();
-    private List<BeamSegment> beamSegmentList = Lists.newArrayList();
+public class PotionBeaconEntity extends BlockEntity implements BeamEmitter {
+    List<BeamEmitter.BeamSegment> beamSegments = new ArrayList<>();
+    private List<BeamEmitter.BeamSegment> beamSegmentList = new ArrayList<>();
     int level;
     private int minY;
     List<PotionBeaconEffect> effects;
     int charges;
-
     private int color;
 
     public int getColor() {
@@ -59,29 +52,28 @@ public class PotionBeaconEntity extends BlockEntity {
         BlockPos blockPos;
         if (blockEntity.minY < j){
             blockPos = pos;
-            blockEntity.beamSegmentList = Lists.newArrayList();
+            blockEntity.beamSegmentList = new ArrayList<>();
             blockEntity.minY = blockPos.getY() - 1;
         } else {
             blockPos = new BlockPos(i, blockEntity.minY + 1, k);
         }
 
-        BeamSegment beamSegment = blockEntity.beamSegmentList.isEmpty() ? null : blockEntity.beamSegmentList.getLast();
+        BeamEmitter.BeamSegment beamSegment = blockEntity.beamSegmentList.isEmpty() ? null : blockEntity.beamSegmentList.getLast();
         int l = world.getTopY(Heightmap.Type.WORLD_SURFACE, i, k);
 
-        int m;
-        for (m = 0; m < 10 && blockPos.getY() <= l; ++m){
+        for (int m = 0; m < 10 && blockPos.getY() <= l; ++m){
             BlockState blockState = world.getBlockState(blockPos);
             Block block = blockState.getBlock();
             if (block instanceof Stainable || block == PotionBeaconBlock.POTION_BEACON_BLOCK) {
                 int n = blockEntity.color;
                 if (blockEntity.beamSegmentList.size() <= 1) {
-                    beamSegment = new BeamSegment(n);
+                    beamSegment = new BeamEmitter.BeamSegment(n);
                     blockEntity.beamSegmentList.add(beamSegment);
                 } else if (beamSegment != null) {
-                    if (n == beamSegment.color) {
+                    if (n == beamSegment.getColor()) {
                         beamSegment.increaseHeight();
                     } else {
-                        beamSegment = new BeamSegment(ColorHelper.average(beamSegment.color, n));
+                        beamSegment = new BeamEmitter.BeamSegment(ColorHelper.average(beamSegment.getColor(), n));
                         blockEntity.beamSegmentList.add(beamSegment);
                     }
                 }
@@ -91,13 +83,14 @@ public class PotionBeaconEntity extends BlockEntity {
                     blockEntity.minY = l;
                     break;
                 }
+                beamSegment.increaseHeight();
             }
 
             blockPos = blockPos.up();
             ++blockEntity.minY;
         }
 
-        m = blockEntity.level;
+        int m = blockEntity.level;
         if (world.getTime() % 80L == 0L) {
             if (!blockEntity.beamSegments.isEmpty()) {
                 blockEntity.level = PotionBeaconEntity.updateLevel(world, i, j, k);
@@ -112,9 +105,9 @@ public class PotionBeaconEntity extends BlockEntity {
                     blockEntity.effects.clear();
                     blockEntity.updateColor();
                 }
-                world.updateListeners(pos, blockEntity.getCachedState(), blockEntity.getCachedState(), 0);
             }
             blockEntity.markDirty();
+            world.updateListeners(pos, blockEntity.getCachedState(), blockEntity.getCachedState(), 0);
         }
 
         if (blockEntity.minY >= l) {
@@ -148,21 +141,25 @@ public class PotionBeaconEntity extends BlockEntity {
         world.updateListeners(pos, this.getCachedState(), this.getCachedState(), 0);
     }
 
-    private static int updateLevel(World world, int x, int y, int z){
-        int k;
+    private static int updateLevel(World world, int x, int y, int z) {
         int i = 0;
-        int j = 1;
-        while (j <= 4 && (k = y -j) >= world.getBottomY()) {
+        for(int j = 1; j <= 4; i = j++) {
+            int k = y - j;
+            if (k < world.getBottomY()) {
+                break;
+            }
             boolean bl = true;
-            block1: for (int l = x - j; l <= x + j && bl; ++l){
-                for (int m = z - j; m <= z + j; ++m){
-                    if (world.getBlockState(new BlockPos(l, k, m)).isIn(BlockTags.BEACON_BASE_BLOCKS)) continue;
-                    bl = false;
-                    continue block1;
+            for(int l = x - j; l <= x + j && bl; ++l) {
+                for(int m = z - j; m <= z + j; ++m) {
+                    if (!world.getBlockState(new BlockPos(l, k, m)).isIn(BlockTags.BEACON_BASE_BLOCKS)) {
+                        bl = false;
+                        break;
+                    }
                 }
             }
-            if (!bl) break;
-            i = j++;
+            if (!bl) {
+                break;
+            }
         }
         return i;
     }
@@ -181,9 +178,7 @@ public class PotionBeaconEntity extends BlockEntity {
             charges = 1500;
             if (effects.isEmpty()) charges = 0;
         } else charges += 1500;
-        world.updateListeners(pos, this.getCachedState(), this.getCachedState(), 0);
         updateColor();
-        this.markDirty();
     }
 
     private static void applyPlayerEffects(World world, BlockPos pos, List<PotionBeaconEffect> effects, int level, int charges){
@@ -205,30 +200,27 @@ public class PotionBeaconEntity extends BlockEntity {
         return Math.max(charges - list.size(), 0);
     }
 
-    public List<BeamSegment> getBeamSegments() {
+    public List<BeamEmitter.BeamSegment> getBeamSegments() {
         return this.level == 0 ? ImmutableList.of() : this.beamSegments;
     }
 
-    @Nullable
-    @Override
-    public Packet<ClientPlayPacketListener> toUpdatePacket(){
+    public BlockEntityUpdateS2CPacket toUpdatePacket() {
         return BlockEntityUpdateS2CPacket.create(this);
     }
 
-    @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup wrapperLookup){
-        return this.createNbt(wrapperLookup);
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        return this.createComponentlessNbt(registries);
     }
 
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){
         super.readNbt(nbt, wrapper);
-        charges = nbt.getInt("charges");
-        NbtList nbtList = nbt.getList("effects", NbtElement.COMPOUND_TYPE);
+        charges = nbt.getInt("charges", 0);
+        NbtList nbtList = nbt.getListOrEmpty("effects");
         for (int i = 0; i < nbtList.size(); i++){
-            effects.add(new PotionBeaconEffect(nbtList.getCompound(i)));
+            effects.add(new PotionBeaconEffect(nbtList.getCompoundOrEmpty(i)));
         }
-        color = nbt.getInt("color");
+        color = nbt.getInt("color", -1);
         updateColor();
     }
     @Override
@@ -244,27 +236,8 @@ public class PotionBeaconEntity extends BlockEntity {
         super.writeNbt(nbt, wrapper);
     }
 
-    @Override
     public void setWorld(World world) {
         super.setWorld(world);
         this.minY = world.getBottomY() - 1;
-    }
-
-    public static class BeamSegment {
-        final int color;
-        private int height;
-        public BeamSegment(int color){
-            this.color = color;
-            this.height = 1;
-        }
-        protected void increaseHeight(){
-            ++this.height;
-        }
-        public int getColor() {
-            return this.color;
-        }
-        public int getHeight() {
-            return this.height;
-        }
     }
 }

@@ -4,6 +4,10 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.minecraft.block.entity.BeamEmitter;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -14,121 +18,120 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.ColorHelper;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 
 import java.util.List;
 
 @Environment(EnvType.CLIENT)
-public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<PotionBeaconEntity> {
+public class PotionBeaconBlockEntityRenderer<T extends BlockEntity & BeamEmitter> implements BlockEntityRenderer<T>{
     public static final Identifier BEAM_TEXTURE = Identifier.ofVanilla("textures/entity/beacon_beam.png");
-    public static final int MAX_BEAM_HEIGHT = 1024;
+    public static final int MAX_BEAM_HEIGHT = 2048;
 
     public PotionBeaconBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
     }
 
-    public void render(PotionBeaconEntity potionBeaconEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
-        long l = potionBeaconEntity.getWorld().getTime();
-        List<PotionBeaconEntity.BeamSegment> list = potionBeaconEntity.getBeamSegments();
-        int k = 0;
+    public void render(T entity, float tickProgress, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Vec3d cameraPos) {
+        long l = entity.getWorld().getTime();
+        float f = (float)cameraPos.subtract(entity.getPos().toCenterPos()).horizontalLength();
+        ClientPlayerEntity clientPlayerEntity = MinecraftClient.getInstance().player;
+        float g = clientPlayerEntity != null && clientPlayerEntity.isUsingSpyglass() ? 1.0F : Math.max(1.0F, f / 96.0F);
+        List<BeamEmitter.BeamSegment> list = entity.getBeamSegments();
+        int i = 0;
 
-        for(int m = 0; m < list.size(); ++m) {
-            PotionBeaconEntity.BeamSegment beamSegment = list.get(m);
-            renderBeam(matrixStack, vertexConsumerProvider, f, l, k, m == list.size() - 1 ? MAX_BEAM_HEIGHT : beamSegment.getHeight(), beamSegment.getColor());
-            k += beamSegment.getHeight();
+        for(int j = 0; j < list.size(); ++j) {
+            BeamEmitter.BeamSegment beamSegment = list.get(j);
+            renderBeam(matrices, vertexConsumers, tickProgress, g, l, i, j == list.size() - 1 ? MAX_BEAM_HEIGHT : beamSegment.getHeight(), beamSegment.getColor());
+            i += beamSegment.getHeight();
         }
+        if (entity instanceof PotionBeaconEntity potionBeacon){
+            if(potionBeacon.charges <= 0) {
+                return;
+            }
 
-        if(potionBeaconEntity.charges <= 0) {
-            return;
+            int color = potionBeacon.getColor();
+            Sprite sprite = FluidVariantRendering.getSprites(FluidVariant.of(Fluids.WATER))[0];
+            RenderLayer potionLayer = RenderLayer.getEntityTranslucent(sprite.getAtlasId());
+            VertexConsumer vertexConsumer = vertexConsumers.getBuffer(potionLayer);
+            float y2 = (float) Math.min(Math.ceil((double) potionBeacon.charges / 1500)*3/16+9/8f, 27f/16);
+            float minU = sprite.getFrameU(2/16f);
+            float maxU = sprite.getFrameU(14/16f);
+            float minV = sprite.getFrameV(2/16f);
+            float maxV = sprite.getFrameV(14/16f);
+            MatrixStack.Entry entry = matrices.peek();
+            vertexConsumer.vertex(entry, 2/16f, y2, 2/16f)
+                    .color(color)
+                    .texture(minU, minV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
+            vertexConsumer.vertex(entry, 14/16f, y2, 2/16f)
+                    .color(color)
+                    .texture(maxU, minV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
+            vertexConsumer.vertex(entry, 14/16f, y2, 14/16f)
+                    .color(color)
+                    .texture(maxU, maxV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
+            vertexConsumer.vertex(entry, 2/16f, y2, 14/16f)
+                    .color(color)
+                    .texture(minU, maxV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
+            vertexConsumer.vertex(entry, 2/16f, 1, 2/16f)
+                    .color(color)
+                    .texture(minU, minV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
+            vertexConsumer.vertex(entry, 14/16f, 1, 2/16f)
+                    .color(color)
+                    .texture(maxU, minV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
+            vertexConsumer.vertex(entry, 14/16f, 1, 14/16f)
+                    .color(color)
+                    .texture(maxU, maxV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
+            vertexConsumer.vertex(entry, 2/16f, 1, 14/16f)
+                    .color(color)
+                    .texture(minU, maxV)
+                    .light(light)
+                    .overlay(overlay)
+                    .normal(0,1,0);
         }
-        int color = potionBeaconEntity.getColor();
-        Sprite sprite = FluidVariantRendering.getSprites(FluidVariant.of(Fluids.WATER))[0];
-        RenderLayer potionLayer = RenderLayer.getEntityTranslucent(sprite.getAtlasId());
-        VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(potionLayer);
-        float y2 = (float) Math.min(Math.ceil((double) potionBeaconEntity.charges / 1500)*3/16+9/8f, 27f/16);
-        float minU = sprite.getFrameU(2/16f);
-        float maxU = sprite.getFrameU(14/16f);
-        float minV = sprite.getFrameV(2/16f);
-        float maxV = sprite.getFrameV(14/16f);
-        MatrixStack.Entry entry = matrixStack.peek();
-        vertexConsumer.vertex(entry, 2/16f, y2, 2/16f)
-                .color(color)
-                .texture(minU, minV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, y2, 2/16f)
-                .color(color)
-                .texture(maxU, minV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, y2, 14/16f)
-                .color(color)
-                .texture(maxU, maxV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
-        vertexConsumer.vertex(entry, 2/16f, y2, 14/16f)
-                .color(color)
-                .texture(minU, maxV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
-        vertexConsumer.vertex(entry, 2/16f, 1, 2/16f)
-                .color(color)
-                .texture(minU, minV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, 1, 2/16f)
-                .color(color)
-                .texture(maxU, minV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
-        vertexConsumer.vertex(entry, 14/16f, 1, 14/16f)
-                .color(color)
-                .texture(maxU, maxV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
-        vertexConsumer.vertex(entry, 2/16f, 1, 14/16f)
-                .color(color)
-                .texture(minU, maxV)
-                .light(i)
-                .overlay(j)
-                .normal(0,1,0);
     }
 
-    private static void renderBeam(MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, long worldTime, int yOffset, int maxY, int color) {
-        renderBeam(matrices, vertexConsumers, BEAM_TEXTURE, tickDelta, 1.0F, worldTime, yOffset, maxY, color, 0.2F, 0.25F);
+    private static void renderBeam(MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickProgress, float scale, long worldTime, int yOffset, int maxY, int color) {
+        renderBeam(matrices, vertexConsumers, BEAM_TEXTURE, tickProgress, 1.0F, worldTime, yOffset, maxY, color, 0.2F * scale, 0.25F * scale);
     }
 
-    public static void renderBeam(MatrixStack matrices, VertexConsumerProvider vertexConsumers, Identifier textureId, float tickDelta, float heightScale, long worldTime, int yOffset, int maxY, int color, float innerRadius, float outerRadius) {
+    public static void renderBeam(MatrixStack matrices, VertexConsumerProvider vertexConsumers, Identifier textureId, float tickProgress, float heightScale, long worldTime, int yOffset, int maxY, int color, float innerRadius, float outerRadius) {
         int i = yOffset + maxY;
         matrices.push();
-        matrices.translate(0.5, 0.0, 0.5);
-        float f = (float)Math.floorMod(worldTime, 40) + tickDelta;
+        matrices.translate(0.5F, 0.0F, (double)0.5F);
+        float f = (float)Math.floorMod(worldTime, 40) + tickProgress;
         float g = maxY < 0 ? f : -f;
         float h = MathHelper.fractionalPart(g * 0.2F - (float)MathHelper.floor(g * 0.1F));
         matrices.push();
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(f * 2.25F - 45.0F));
-        float j;
-        float m;
         float n = -innerRadius;
         float q = -innerRadius;
         float t = -1.0F + h;
         float u = (float)maxY * heightScale * (0.5F / innerRadius) + t;
         renderBeamLayer(matrices, vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(textureId, false)), color, yOffset, i, 0.0F, innerRadius, innerRadius, 0.0F, n, 0.0F, 0.0F, q, u, t);
         matrices.pop();
-        j = -outerRadius;
+        float j = -outerRadius;
         float k = -outerRadius;
-        m = -outerRadius;
+        float m = -outerRadius;
         n = -outerRadius;
-        t = -1.0F + h;
         u = (float)maxY * heightScale + t;
         renderBeamLayer(matrices, vertexConsumers.getBuffer(RenderLayer.getBeaconBeam(textureId, true)), ColorHelper.withAlpha(32, color), yOffset, i, j, k, outerRadius, m, n, outerRadius, outerRadius, outerRadius, u, t);
         matrices.pop();
@@ -153,15 +156,15 @@ public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<Poti
         vertices.vertex(matrix, x, (float)y, z).color(color).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(matrix, 0.0F, 1.0F, 0.0F);
     }
 
-    public boolean rendersOutsideBoundingBox(PotionBeaconEntity beaconBlockEntity) {
+    public boolean rendersOutsideBoundingBox(T blockEntity) {
         return true;
     }
 
     public int getRenderDistance() {
-        return 256;
+        return MinecraftClient.getInstance().options.getClampedViewDistance() * 16;
     }
 
-    public boolean isInRenderDistance(PotionBeaconEntity beaconBlockEntity, Vec3d vec3d) {
-        return Vec3d.ofCenter(beaconBlockEntity.getPos()).multiply(1.0, 0.0, 1.0).isInRange(vec3d.multiply(1.0, 0.0, 1.0), this.getRenderDistance());
+    public boolean isInRenderDistance(T blockEntity, Vec3d pos) {
+        return Vec3d.ofCenter(blockEntity.getPos()).multiply(1.0F, 0.0F, 1.0F).isInRange(pos.multiply(1.0F, 0.0F, 1.0F), this.getRenderDistance());
     }
 }
