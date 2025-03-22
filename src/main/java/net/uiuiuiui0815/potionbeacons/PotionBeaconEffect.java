@@ -9,8 +9,8 @@ import net.minecraft.util.Identifier;
 import java.util.Objects;
 
 public class PotionBeaconEffect {
-    public int amplifier;
-    public StatusEffect effect;
+    public final int amplifier;
+    public final StatusEffect effect;
 
     public PotionBeaconEffect(NbtCompound nbtCompound){
         amplifier=nbtCompound.getInt("amplifier",0);

@@ -49,8 +49,8 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
 
     public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
 
-    Identifier id = Identifier.of(PotionBeacons.MOD_ID, "potion_beacon");
-    RegistryKey<Block> key = RegistryKey.of(RegistryKeys.BLOCK, id);
+    final Identifier id = Identifier.of(PotionBeacons.MOD_ID, "potion_beacon");
+    final RegistryKey<Block> key = RegistryKey.of(RegistryKeys.BLOCK, id);
     public static final PotionBeaconBlock POTION_BEACON_BLOCK = new PotionBeaconBlock(AbstractBlock.Settings.copy(Blocks.BEACON).registryKey(RegistryKey.of(RegistryKeys.BLOCK, Identifier.of(PotionBeacons.MOD_ID, "potion_beacon"))));
 
     public PotionBeaconBlock(Settings settings) {
@@ -161,6 +161,7 @@ public class PotionBeaconBlock extends BlockWithEntity implements BlockEntityPro
                 }
                 if (beaconEntity.charges > 3000 && beaconEntity.effects.equals(effectList)) return ActionResult.CONSUME;
                 beaconEntity.addEffects(effectList);
+                world.updateListeners(beaconPos, beaconEntity.getCachedState(), beaconEntity.getCachedState(), 0);
                 if (!player.isCreative()) {
                     player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
                 }
