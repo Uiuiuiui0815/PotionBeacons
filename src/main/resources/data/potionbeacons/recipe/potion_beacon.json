@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:beacon",
+    "minecraft:cauldron"
+  ],
+  "result": {
+    "id": "potionbeacons:potion_beacon"
+  }
+}
