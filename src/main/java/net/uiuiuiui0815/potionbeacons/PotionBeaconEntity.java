@@ -1,6 +1,7 @@
 package net.uiuiuiui0815.potionbeacons;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.serialization.Codec;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -9,14 +10,16 @@ import net.minecraft.block.entity.BeamEmitter;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.Heightmap;
@@ -73,7 +76,7 @@ public class PotionBeaconEntity extends BlockEntity implements BeamEmitter {
                 PotionBeaconEntity.applyPlayerEffects(world, pos, blockEntity.effects, blockEntity.level, blockEntity.charges);
                 blockEntity.charges = PotionBeaconEntity.updateCharges(world, pos, blockEntity.charges);
                 if (blockEntity.charges == 0) {
-                    blockEntity.effects.clear();
+                    blockEntity.effects = new ArrayList<>();
                     blockEntity.updateColor();
                 }
             }
@@ -177,32 +180,28 @@ public class PotionBeaconEntity extends BlockEntity implements BeamEmitter {
         return BlockEntityUpdateS2CPacket.create(this);
     }
 
+    @Override
     public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        return this.createComponentlessNbt(registries);
+        return createComponentlessNbt(registries);
     }
 
+
+
     @Override
-    public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){
-        super.readNbt(nbt, wrapper);
-        charges = nbt.getInt("charges", 0);
-        NbtList nbtList = nbt.getListOrEmpty("effects");
-        for (int i = 0; i < nbtList.size(); i++){
-            effects.add(new PotionBeaconEffect(nbtList.getCompoundOrEmpty(i)));
-        }
-        color = nbt.getInt("color", -1);
+    public void readData(ReadView view){
+        super.readData(view);
+        charges = view.getInt("charges", 0);
+        effects = view.read("effects", Codec.list(new PotionBeaconEffect(StatusEffects.STRENGTH.value(),0).getCodec())).orElse(new ArrayList<>());
+        color = view.getInt("color", -1);
         updateColor();
     }
     @Override
-    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper){
-        nbt.putInt("level", level);
-        nbt.putInt("charges", charges);
-        NbtList nbtList = new NbtList();
-        for (PotionBeaconEffect effect : effects) {
-            nbtList.add(effect.toNBT());
-        }
-        nbt.put("effects", nbtList);
-        nbt.putInt("color", color);
-        super.writeNbt(nbt, wrapper);
+    protected void writeData(WriteView view){
+        super.writeData(view);
+        view.putInt("level", level);
+        view.putInt("charges", charges);
+        view.put("effects", Codec.list(new PotionBeaconEffect(StatusEffects.STRENGTH.value(),0).getCodec()), effects);
+        view.putInt("color", color);
     }
 
     public void setWorld(World world) {
