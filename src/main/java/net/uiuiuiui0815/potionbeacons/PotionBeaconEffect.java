@@ -1,10 +1,10 @@
 package net.uiuiuiui0815.potionbeacons;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
 
 import java.util.Objects;
 
@@ -12,10 +12,19 @@ public class PotionBeaconEffect {
     public final int amplifier;
     public final StatusEffect effect;
 
-    public PotionBeaconEffect(NbtCompound nbtCompound){
-        amplifier=nbtCompound.getInt("amplifier",0);
-        String s = nbtCompound.getString("effect","");
-        effect = Registries.STATUS_EFFECT.get(Identifier.tryParse(s));
+    public int getAmplifier() {
+        return amplifier;
+    }
+
+    public StatusEffect getEffect() {
+        return effect;
+    }
+
+    public final Codec<PotionBeaconEffect> getCodec(){
+        return RecordCodecBuilder.create(instance -> instance.group(
+                Registries.STATUS_EFFECT.getCodec().fieldOf("effect").forGetter(PotionBeaconEffect::getEffect),
+                Codec.INT.fieldOf("amplifier").forGetter(PotionBeaconEffect::getAmplifier)
+        ).apply(instance, PotionBeaconEffect::new));
     }
 
     public PotionBeaconEffect(StatusEffect effect, int amplifier) {
@@ -23,12 +32,8 @@ public class PotionBeaconEffect {
         this.effect = effect;
     }
 
-    public NbtCompound toNBT(){
-        NbtCompound nbtCompound = new NbtCompound();
-        nbtCompound.putString("effect", Registries.STATUS_EFFECT.getId(effect).toString());
-        nbtCompound.putInt("amplifier", amplifier);
-
-        return nbtCompound;
+    public String toString(){
+        return Objects.requireNonNull(Registries.STATUS_EFFECT.getId(effect)) + "-" + amplifier;
     }
 
     @Override

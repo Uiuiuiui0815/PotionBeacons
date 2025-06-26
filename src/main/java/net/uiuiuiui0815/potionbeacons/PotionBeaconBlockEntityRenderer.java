@@ -89,8 +89,8 @@ public class PotionBeaconBlockEntityRenderer implements BlockEntityRenderer<Poti
                 .normal(0, 1, 0);
     }
 
-    public boolean rendersOutsideBoundingBox(PotionBeaconEntity blockEntity) {
-        return beaconRenderer.rendersOutsideBoundingBox(blockEntity);
+    public boolean rendersOutsideBoundingBox() {
+        return beaconRenderer.rendersOutsideBoundingBox();
     }
 
     public int getRenderDistance() {

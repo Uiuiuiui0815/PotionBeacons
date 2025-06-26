@@ -11,7 +11,7 @@
         ]
       }
     },
-    "has_the_recipe": {
+    "has_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
         "recipe": "potionbeacons:potion_beacon"
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_beacon",
-      "has_the_recipe"
+      "has_recipe"
     ]
   ],
   "rewards": {
